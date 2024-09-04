@@ -136,7 +136,7 @@ spec:
         - --kubelet-use-node-status-port
         - --metric-resolution=15s
         #image: k8s.gcr.io/metrics-server/metrics-server:v0.5.0
-        image: {{ DST_REGISTRY }}/easzlab/metrics-server:{{ metricsVer }}
+        image: {{ DST_REGISTRY_ALL }}/easzlab/metrics-server:{{ metricsVer }}
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3

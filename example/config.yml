@@ -8,7 +8,9 @@ INSTALL_SOURCE: "offline"
 OS_HARDEN: false
 
 # 目标镜像仓库
-DST_REGISTRY: "registry-c.cmft.com/cmhk-grd-paas-portal-public"
+DST_REGISTRY: "easzlab.io.local:5000"
+DST_REGISTRY_PREFIX: ""
+DST_REGISTRY_ALL: "{{ DST_REGISTRY_ALL }}/{{ DST_REGISTRY_PREFIX }}"
 
 ############################
 # role:deploy
@@ -54,7 +56,7 @@ ETCD_WAL_DIR: ""
 ENABLE_MIRROR_REGISTRY: false
 
 # [containerd]基础容器镜像
-SANDBOX_IMAGE: "easzlab.io.local:5000/easzlab/pause:__pause__"
+SANDBOX_IMAGE: "{{ DST_REGISTRY_ALL }}/easzlab/pause:__pause__"
 
 # [containerd]容器持久化存储目录
 CONTAINERD_STORAGE_DIR: "/var/lib/containerd"

@@ -13,7 +13,7 @@ set -o pipefail
 #set -o xtrace
 
 localRegistry=false
-dstRegistry=registry-c.cmft.com/cmhk-grd-paas-portal-public
+dstRegistry=easzlab.io.local:5000
 dstInsecure=false
 
 # default settings, can be overridden by cmd line options, see usage
@@ -39,7 +39,7 @@ ciliumVer=1.12.4
 flannelVer=v0.19.2
 nfsProvisionerVer=v4.0.2
 promChartVer=39.11.0
-nginxIngressChartVer=0.44.0
+nginxIngressChartVer=v2.3.2
 
 # images not downloaded
 kubeRouterVer=v0.3.1
@@ -491,6 +491,12 @@ function get_extra_images() {
   docker push $dstRegistry/prometheus/node-exporter:v1.3.1
   docker tag quay.io/prometheus/prometheus:v2.37.0 $dstRegistry/prometheus/prometheus:v2.37.0
   docker push $dstRegistry/prometheus/prometheus:v2.37.0
+
+  # nginx ingress controller chart
+  if [[ ! -f "$imageDir/nginx-ingress-chart_$nginxIngressChartVer.tar" ]];then
+    docker pull ingress-nginx/controller:v1.11.2 && \
+  fi
+  docker tag ingress-nginx/controller:v1.11.2 $dstRegistry/nginx-ingress-controller/controller:v1.11.2
 }
 
 function download_all() {

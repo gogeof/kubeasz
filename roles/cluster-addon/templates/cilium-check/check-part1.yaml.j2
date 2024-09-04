@@ -23,7 +23,7 @@ spec:
           value: "8080"
         ports:
         - containerPort: 8080
-        image: {{ DST_REGISTRY }}/cilium/json-mock:v1.3.0
+        image: {{ DST_REGISTRY_ALL }}/cilium/json-mock:v1.3.0
         imagePullPolicy: IfNotPresent
         readinessProbe:
           timeoutSeconds: 7
@@ -80,7 +80,7 @@ spec:
         ports:
         - containerPort: 8080
           hostPort: 40000
-        image: {{ DST_REGISTRY }}/cilium/json-mock:v1.3.0
+        image: {{ DST_REGISTRY_ALL }}/cilium/json-mock:v1.3.0
         imagePullPolicy: IfNotPresent
         readinessProbe:
           timeoutSeconds: 7
@@ -135,7 +135,7 @@ spec:
         - name: PORT
           value: "41000"
         ports: []
-        image: {{ DST_REGISTRY }}/cilium/json-mock:v1.3.0
+        image: {{ DST_REGISTRY_ALL }}/cilium/json-mock:v1.3.0
         imagePullPolicy: IfNotPresent
         readinessProbe:
           timeoutSeconds: 7

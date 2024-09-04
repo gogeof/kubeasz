@@ -7,8 +7,8 @@ alertmanager:
   crname: main
   alertmanagerSpec:
     image:
-      registry: registry-c.cmft.com
-      repository: cmhk-grd-paas-portal-public/prometheus/alertmanager
+      registry: {{ DST_REGISTRY }}
+      repository: {{ DST_REGISTRY_PREFIX }}/prometheus/alertmanager
 
   service:
     nodePort: 30902
@@ -19,15 +19,15 @@ grafana:
   enabled: false
   adminPassword: Admin1234!
   image:
-    registry: registry-c.cmft.com
-    repository: cmhk-grd-paas-portal-public/prometheus/grafana
+    registry: {{ DST_REGISTRY }}
+    repository: {{ DST_REGISTRY_PREFIX }}/prometheus/grafana
   service:
     nodePort: 30903
     type: NodePort
   sidecar:
     image:
-      registry: registry-c.cmft.com
-      repository: cmhk-grd-paas-portal-public/prometheus/k8s-sidecar
+      registry: {{ DST_REGISTRY }}
+      repository: {{ DST_REGISTRY_PREFIX }}/prometheus/k8s-sidecar
     skipTlsVerify: true
 
 
@@ -107,8 +107,8 @@ kubeStateMetrics:
 kube-state-metrics:
   crname: kube-state-metrics
   image:
-    registry: registry-c.cmft.com
-    repository: cmhk-grd-paas-portal-public/prometheus/kube-state-metrics
+    registry: {{ DST_REGISTRY }}
+    repository: {{ DST_REGISTRY_PREFIX }}/prometheus/kube-state-metrics
 
 ## Deploy node exporter as a daemonset to all nodes
 nodeExporter:
@@ -117,8 +117,8 @@ nodeExporter:
 ## Configuration for prometheus-node-exporter subchart
 prometheus-node-exporter:
   image:
-    registry: registry-c.cmft.com
-    repository: cmhk-grd-paas-portal-public/prometheus/node-exporter
+    registry: {{ DST_REGISTRY }}
+    repository: {{ DST_REGISTRY_PREFIX }}/prometheus/node-exporter
 
 ## Manages Prometheus and Alertmanager components
 prometheusOperator:
@@ -129,19 +129,19 @@ prometheusOperator:
     patch:
       enabled: true
       image:
-        registry: registry-c.cmft.com
-        repository: cmhk-grd-paas-portal-public/prometheus/kube-webhook-certgen
+        registry: {{ DST_REGISTRY }}
+        repository: {{ DST_REGISTRY_PREFIX }}/prometheus/kube-webhook-certgen
   image:
-    registry: registry-c.cmft.com
-    repository: cmhk-grd-paas-portal-public/prometheus/prometheus-operator
+    registry: {{ DST_REGISTRY }}
+    repository: {{ DST_REGISTRY_PREFIX }}/prometheus/prometheus-operator
   service:
     nodePort: 30899
     nodePortTls: 30900
     type: NodePort
   prometheusConfigReloader:
     image:
-      registry: registry-c.cmft.com
-      repository: cmhk-grd-paas-portal-public/prometheus/prometheus-config-reloader
+      registry: {{ DST_REGISTRY }}
+      repository: {{ DST_REGISTRY_PREFIX }}/prometheus/prometheus-config-reloader
 
 ## Deploy a Prometheus instance
 prometheus:
@@ -153,8 +153,8 @@ prometheus:
 
   prometheusSpec:
     image:
-      registry: registry-c.cmft.com
-      repository: cmhk-grd-paas-portal-public/prometheus/prometheus
+      registry: {{ DST_REGISTRY }}
+      repository: prometheus/prometheus
     replicas: 1
     secrets:
     - etcd-client-cert
