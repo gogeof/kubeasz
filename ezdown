@@ -494,9 +494,19 @@ function get_extra_images() {
 
   # nginx ingress controller chart
   if [[ ! -f "$imageDir/nginx-ingress-chart_$nginxIngressChartVer.tar" ]];then
-    docker pull ingress-nginx/controller:v1.11.2 && \
+    docker pull private-registry.nginx.com/nap/waf-enforcer:5.2.0
+    docker pull private-registry.nginx.com/nap/waf-config-mgr:5.2.0
+    docker pull nginx/nginx-ingress:3.6.2
+    docker pull ingress-nginx/controller:v1.11.2
   fi
+  docker tag private-registry.nginx.com/nap/waf-enforcer:5.2.0 $dstRegistry/nap/waf-enforcer:5.2.0
+  docker push $dstRegistry/nap/waf-enforcer:5.2.0
+  docker tag rivate-registry.nginx.com/nap/waf-config-mgr:5.2.0 $dstRegistry/nap/waf-config-mgr:5.2.0
+  docker push $dstRegistry/nap/waf-config-mgr:5.2.0
+  docker tag nginx/nginx-ingress:3.6.2 $dstRegistry/nginx/nginx-ingress:3.6.2
+  docker push $dstRegistry/nginx/nginx-ingress:3.6.2
   docker tag ingress-nginx/controller:v1.11.2 $dstRegistry/nginx-ingress-controller/controller:v1.11.2
+  docker push $dstRegistry/nginx-ingress-controller/controller:v1.11.2
 }
 
 function download_all() {
