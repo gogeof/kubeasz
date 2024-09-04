@@ -135,18 +135,21 @@ version = 2
 
       [plugins."io.containerd.grpc.v1.cri".registry.auths]
 
+{% if ENABLE_LOCAL_REGISTRY %}
       [plugins."io.containerd.grpc.v1.cri".registry.configs]
-        [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ DST_REGISTRY_ALL }}".tls]
+        [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ DST_REGISTRY }}".tls]
           insecure_skip_verify = true
-
+{% endif %}
         [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ HARBOR_REGISTRY }}".tls]
           insecure_skip_verify = true
 
       [plugins."io.containerd.grpc.v1.cri".registry.headers]
 
       [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ DST_REGISTRY_ALL }}"]
-          endpoint = ["http://{{ DST_REGISTRY_ALL }}"]
+{% if ENABLE_LOCAL_REGISTRY %}
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ DST_REGISTRY }}"]
+          endpoint = ["http://{{ DST_REGISTRY }}"]
+{% endif %}
         [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ HARBOR_REGISTRY }}"]
           endpoint = ["https://{{ HARBOR_REGISTRY }}"]
 {% if ENABLE_MIRROR_REGISTRY %}

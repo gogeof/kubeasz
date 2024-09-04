@@ -7,17 +7,14 @@
   - etcd
   - etcdctl
   - etcdutl
-  tags: upgrade_etcd
 
 - name: 创建etcd备份和碎片整理脚本
   template: src={{ item }} dest={{ bin_dir }}/{{ item }} mode=0755
-  connection: local
-  run_once: true
   with_items:
-    - etcd.env
-    - etcd-common-tools
-    - etcd-backup.sh
-    - etcd-defrag.sh
+  - etcd.env
+  - etcd-common-tools
+  - etcd-backup.sh
+  - etcd-defrag.sh
   tags: upgrade_etcd
 
 - name: 创建etcd证书请求
