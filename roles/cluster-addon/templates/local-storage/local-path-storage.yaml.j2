@@ -57,7 +57,7 @@ spec:
       serviceAccountName: local-path-provisioner-service-account
       containers:
         - name: local-path-provisioner
-          image: easzlab.io.local:5000/rancher/local-path-provisioner:{{ local_path_provisioner_ver }}
+          image: {{ DST_REGISTRY_ALL }}/rancher/local-path-provisioner:{{ local_path_provisioner_ver }}
           imagePullPolicy: IfNotPresent
           command:
             - local-path-provisioner
@@ -119,7 +119,7 @@ data:
     spec:
       containers:
       - name: helper-pod
-        image: easzlab.io.local:5000/rancher/local-path-provisioner:{{ local_path_provisioner_ver }}
+        image: {{ DST_REGISTRY_ALL }}/rancher/local-path-provisioner:{{ local_path_provisioner_ver }}
         imagePullPolicy: IfNotPresent
 
 

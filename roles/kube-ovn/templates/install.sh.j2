@@ -34,13 +34,13 @@ ENABLE_BIND_LOCAL_IP=${ENABLE_BIND_LOCAL_IP:-true}
 CNI_CONF_DIR="/etc/cni/net.d"
 CNI_BIN_DIR="/opt/cni/bin"
 
-REGISTRY="easzlab.io.local:5000/kubeovn"
+REGISTRY="{{ DST_REGISTRY_ALL }}/kubeovn"
 VERSION="v1.11.5"
 IMAGE_PULL_POLICY="IfNotPresent"
 POD_CIDR="{{ CLUSTER_CIDR }}"              # Do NOT overlap with NODE/SVC/JOIN CIDR
 POD_GATEWAY="{{ CLUSTER_CIDR_GW }}"
 SVC_CIDR="{{ SERVICE_CIDR }}"              # Do NOT overlap with NODE/POD/JOIN CIDR
-JOIN_CIDR="100.64.0.0/16"                  # Do NOT overlap with NODE/POD/SVC CIDR
+JOIN_CIDR="100.121.0.0/16"                  # Do NOT overlap with NODE/POD/SVC CIDR
 PINGER_EXTERNAL_ADDRESS="114.114.114.114"  # Pinger check external ip probe
 PINGER_EXTERNAL_DOMAIN="alauda.cn"         # Pinger check external domain probe
 SVC_YAML_IPFAMILYPOLICY=""
@@ -50,7 +50,7 @@ if [ "$IPV6" = "true" ]; then
   SVC_CIDR="fd00:10:96::/112"               # Do NOT overlap with NODE/POD/JOIN CIDR
   JOIN_CIDR="fd00:100:64::/64"              # Do NOT overlap with NODE/POD/SVC CIDR
   PINGER_EXTERNAL_ADDRESS="2400:3200::1"
-  PINGER_EXTERNAL_DOMAIN="google.com"
+  PINGER_EXTERNAL_DOMAIN="cloud.cmft.com"
 fi
 if [ "$DUAL_STACK" = "true" ]; then
   POD_CIDR="10.16.0.0/16,fd00:10:16::/64"                # Do NOT overlap with NODE/SVC/JOIN CIDR
@@ -58,7 +58,7 @@ if [ "$DUAL_STACK" = "true" ]; then
   SVC_CIDR="10.96.0.0/12,fd00:10:96::/112"               # Do NOT overlap with NODE/POD/JOIN CIDR
   JOIN_CIDR="100.64.0.0/16,fd00:100:64::/64"             # Do NOT overlap with NODE/POD/SVC CIDR
   PINGER_EXTERNAL_ADDRESS="114.114.114.114,2400:3200::1"
-  PINGER_EXTERNAL_DOMAIN="google.com"
+  PINGER_EXTERNAL_DOMAIN="cloud.cmft.com"
   SVC_YAML_IPFAMILYPOLICY="ipFamilyPolicy: PreferDualStack"
 fi
 

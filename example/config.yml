@@ -8,6 +8,11 @@ INSTALL_SOURCE: "online"
 # (deprecated) 未更新上游项目，未验证最新k8s集群安装，不建议启用
 OS_HARDEN: false
 
+# 目标镜像仓库
+ENABLE_LOCAL_REGISTRY: false
+DST_REGISTRY: "easzlab.io.local:5000"
+DST_REGISTRY_PREFIX: ""
+DST_REGISTRY_ALL: "{{ DST_REGISTRY }}/{{ DST_REGISTRY_PREFIX }}"
 
 ############################
 # role:deploy
@@ -49,7 +54,7 @@ ETCD_WAL_DIR: ""
 # role:runtime [containerd,docker]
 ############################
 # [.]启用拉取加速镜像仓库
-ENABLE_MIRROR_REGISTRY: true
+ENABLE_MIRROR_REGISTRY: false
 
 # [.]添加信任的私有仓库
 INSECURE_REG:
@@ -57,7 +62,7 @@ INSECURE_REG:
   - "https://{{ HARBOR_REGISTRY }}"
 
 # [.]基础容器镜像
-SANDBOX_IMAGE: "easzlab.io.local:5000/easzlab/pause:__pause__"
+SANDBOX_IMAGE: "{{ DST_REGISTRY_ALL }}/easzlab/pause:__pause__"
 
 # [containerd]容器持久化存储目录
 CONTAINERD_STORAGE_DIR: "/var/lib/containerd"
@@ -74,7 +79,7 @@ DOCKER_ENABLE_REMOTE_API: false
 ############################
 # k8s 集群 master 节点证书配置，可以添加多个ip和域名（比如增加公网ip和域名）
 MASTER_CERT_HOSTS:
-  - "10.1.1.1"
+  - "10.244.1.1"
   - "k8s.easzlab.io"
   #- "www.test.com"
 
@@ -91,11 +96,11 @@ NODE_CIDR_LEN: 24
 KUBELET_ROOT_DIR: "/var/lib/kubelet"
 
 # node节点最大pod 数
-MAX_PODS: 110
+MAX_PODS: 250
 
 # 配置为kube组件（kubelet,kube-proxy,dockerd等）预留的资源量
 # 数值设置详见templates/kubelet-config.yaml.j2
-KUBE_RESERVED_ENABLED: "no"
+KUBE_RESERVED_ENABLED: "yes"
 
 # k8s 官方不建议草率开启 system-reserved, 除非你基于长期监控，了解系统的资源占用状况；
 # 并且随着系统运行时间，需要适当增加资源预留，数值设置详见templates/kubelet-config.yaml.j2
@@ -178,13 +183,13 @@ metricsserver_install: "yes"
 metricsVer: "__metrics__"
 
 # dashboard 自动安装
-dashboard_install: "yes"
+dashboard_install: "no"
 dashboardVer: "__dashboard__"
 dashboardMetricsScraperVer: "__dash_metrics__"
 
 # prometheus 自动安装
-prom_install: "no"
-prom_namespace: "monitor"
+prom_install: "yes"
+prom_namespace: "openshift-monitoring"
 prom_chart_ver: "__prom_chart__"
 
 # kubeapps 自动安装，如果选择安装，默认同时安装local-storage（提供storageClass: "local-path"）
@@ -211,6 +216,11 @@ nfs_path: "/data/nfs"
 # network-check 自动安装
 network_check_enabled: false 
 network_check_schedule: "*/5 * * * *"
+
+# nginx-ingress-controller 自动安装
+nginx_ingress_install: "yes"
+nginx_ingress_namespace: "openshift-ingress"
+nginx_ingress_ver: "__nginx_ingress_chart__"
 
 ############################
 # role:harbor

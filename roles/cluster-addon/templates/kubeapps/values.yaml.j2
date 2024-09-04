@@ -1,5 +1,5 @@
 global:
-  imageRegistry: "easzlab.io.local:5000"
+  imageRegistry: "{{ DST_REGISTRY_ALL }}"
   # default to use "local-path-provisioner"
   storageClass: "{{ kubeapps_storage_class }}"
 

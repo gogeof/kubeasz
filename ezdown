@@ -12,6 +12,10 @@ set -o errexit
 set -o pipefail
 #set -o xtrace
 
+localRegistry=false
+dstRegistry=easzlab.io.local:5000
+dstInsecure=false
+
 # default settings, can be overridden by cmd line options, see usage
 DOCKER_VER=24.0.7
 KUBEASZ_VER=3.6.3
@@ -51,6 +55,7 @@ localpathProvisionerVer=v0.0.24
 nfsProvisionerVer=v4.0.2
 #https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
 promChartVer=45.23.0
+nginxIngressChartVer=v2.3.2
 #https://github.com/bitnami/charts/tree/main/bitnami/kubeapps
 kubeappsVer=12.4.3
 
@@ -346,12 +351,12 @@ function get_default_images() {
   else
     docker load -i "$imageDir/calico_$calicoVer.tar"
   fi
-  docker tag "calico/cni:$calicoVer" "easzlab.io.local:5000/calico/cni:$calicoVer"
-  docker push "easzlab.io.local:5000/calico/cni:$calicoVer"
-  docker tag "calico/kube-controllers:$calicoVer" "easzlab.io.local:5000/calico/kube-controllers:$calicoVer"
-  docker push "easzlab.io.local:5000/calico/kube-controllers:$calicoVer"
-  docker tag "calico/node:$calicoVer" "easzlab.io.local:5000/calico/node:$calicoVer"
-  docker push "easzlab.io.local:5000/calico/node:$calicoVer"
+  docker tag "calico/cni:$calicoVer" "$dstRegistry/calico/cni:$calicoVer"
+  docker push "$dstRegistry/calico/cni:$calicoVer"
+  docker tag "calico/kube-controllers:$calicoVer" "$dstRegistry/calico/kube-controllers:$calicoVer"
+  docker push "$dstRegistry/calico/kube-controllers:$calicoVer"
+  docker tag "calico/node:$calicoVer" "$dstRegistry/calico/node:$calicoVer"
+  docker push "$dstRegistry/calico/node:$calicoVer"
 
   # coredns
   if [[ ! -f "$imageDir/coredns_$corednsVer.tar" ]];then
@@ -360,8 +365,8 @@ function get_default_images() {
   else
     docker load -i "$imageDir/coredns_$corednsVer.tar"
   fi
-  docker tag "coredns/coredns:$corednsVer" "easzlab.io.local:5000/coredns/coredns:$corednsVer"
-  docker push "easzlab.io.local:5000/coredns/coredns:$corednsVer"
+  docker tag "coredns/coredns:$corednsVer" "$dstRegistry/coredns/coredns:$corednsVer"
+  docker push "$dstRegistry/coredns/coredns:$corednsVer"
 
   # dns-node-cache
   if [[ ! -f "$imageDir/k8s-dns-node-cache_$dnsNodeCacheVer.tar" ]];then
@@ -370,8 +375,8 @@ function get_default_images() {
   else
     docker load -i "$imageDir/k8s-dns-node-cache_$dnsNodeCacheVer.tar"
   fi
-  docker tag "easzlab/k8s-dns-node-cache:$dnsNodeCacheVer" "easzlab.io.local:5000/easzlab/k8s-dns-node-cache:$dnsNodeCacheVer"
-  docker push "easzlab.io.local:5000/easzlab/k8s-dns-node-cache:$dnsNodeCacheVer"
+  docker tag "easzlab/k8s-dns-node-cache:$dnsNodeCacheVer" "$dstRegistry/easzlab/k8s-dns-node-cache:$dnsNodeCacheVer"
+  docker push "$dstRegistry/easzlab/k8s-dns-node-cache:$dnsNodeCacheVer"
 
   # dashboard
   if [[ ! -f "$imageDir/dashboard_$dashboardVer.tar" ]];then
@@ -380,8 +385,8 @@ function get_default_images() {
   else
     docker load -i "$imageDir/dashboard_$dashboardVer.tar"
   fi
-  docker tag "kubernetesui/dashboard:$dashboardVer" "easzlab.io.local:5000/kubernetesui/dashboard:$dashboardVer"
-  docker push "easzlab.io.local:5000/kubernetesui/dashboard:$dashboardVer"
+  docker tag "kubernetesui/dashboard:$dashboardVer" "$dstRegistry/kubernetesui/dashboard:$dashboardVer"
+  docker push "$dstRegistry/kubernetesui/dashboard:$dashboardVer"
 
   # dashboard-metrics-scraper
   if [[ ! -f "$imageDir/metrics-scraper_$dashboardMetricsScraperVer.tar" ]];then
@@ -390,8 +395,8 @@ function get_default_images() {
   else
     docker load -i "$imageDir/metrics-scraper_$dashboardMetricsScraperVer.tar"
   fi
-  docker tag "kubernetesui/metrics-scraper:$dashboardMetricsScraperVer" "easzlab.io.local:5000/kubernetesui/metrics-scraper:$dashboardMetricsScraperVer"
-  docker push "easzlab.io.local:5000/kubernetesui/metrics-scraper:$dashboardMetricsScraperVer"
+  docker tag "kubernetesui/metrics-scraper:$dashboardMetricsScraperVer" "$dstRegistry/kubernetesui/metrics-scraper:$dashboardMetricsScraperVer"
+  docker push "$dstRegistry/kubernetesui/metrics-scraper:$dashboardMetricsScraperVer"
 
   # metrics-server
   if [[ ! -f "$imageDir/metrics-server_$metricsVer.tar" ]];then
@@ -400,8 +405,8 @@ function get_default_images() {
   else
     docker load -i "$imageDir/metrics-server_$metricsVer.tar"
   fi
-  docker tag "easzlab/metrics-server:$metricsVer" "easzlab.io.local:5000/easzlab/metrics-server:$metricsVer"
-  docker push "easzlab.io.local:5000/easzlab/metrics-server:$metricsVer"
+  docker tag "easzlab/metrics-server:$metricsVer" "$dstRegistry/easzlab/metrics-server:$metricsVer"
+  docker push "$dstRegistry/easzlab/metrics-server:$metricsVer"
 
   # pause
   if [[ ! -f "$imageDir/pause_$pauseVer.tar" ]];then
@@ -410,8 +415,8 @@ function get_default_images() {
   else
     docker load -i "$imageDir/pause_$pauseVer.tar"
   fi
-  docker tag "easzlab/pause:$pauseVer" "easzlab.io.local:5000/easzlab/pause:$pauseVer"
-  docker push "easzlab.io.local:5000/easzlab/pause:$pauseVer"
+  docker tag "easzlab/pause:$pauseVer" "$dstRegistry/easzlab/pause:$pauseVer"
+  docker push "$dstRegistry/easzlab/pause:$pauseVer"
 }
 
 function get_extra_images() {
@@ -434,16 +439,16 @@ function get_extra_images() {
       else
         docker load -i "$imageDir/cilium_$ciliumVer.tar"
       fi
-      docker tag "cilium/cilium:v$ciliumVer" "easzlab.io.local:5000/cilium/cilium:v$ciliumVer"
-      docker push "easzlab.io.local:5000/cilium/cilium:v$ciliumVer"
-      docker tag "cilium/operator-generic:v$ciliumVer" "easzlab.io.local:5000/cilium/operator-generic:v$ciliumVer"
-      docker push "easzlab.io.local:5000/cilium/operator-generic:v$ciliumVer"
-      docker tag "cilium/hubble-relay:v$ciliumVer" "easzlab.io.local:5000/cilium/hubble-relay:v$ciliumVer"
-      docker push "easzlab.io.local:5000/cilium/hubble-relay:v$ciliumVer"
-      docker tag cilium/hubble-ui-backend:v0.12.1 easzlab.io.local:5000/cilium/hubble-ui-backend:v0.12.1
-      docker push easzlab.io.local:5000/cilium/hubble-ui-backend:v0.12.1
-      docker tag cilium/hubble-ui:v0.12.1 easzlab.io.local:5000/cilium/hubble-ui:v0.12.1
-      docker push easzlab.io.local:5000/cilium/hubble-ui:v0.12.1
+      docker tag "cilium/cilium:v$ciliumVer" "$dstRegistry/cilium/cilium:v$ciliumVer"
+      docker push "$dstRegistry/cilium/cilium:v$ciliumVer"
+      docker tag "cilium/operator-generic:v$ciliumVer" "$dstRegistry/cilium/operator-generic:v$ciliumVer"
+      docker push "$dstRegistry/cilium/operator-generic:v$ciliumVer"
+      docker tag "cilium/hubble-relay:v$ciliumVer" "$dstRegistry/cilium/hubble-relay:v$ciliumVer"
+      docker push "$dstRegistry/cilium/hubble-relay:v$ciliumVer"
+      docker tag cilium/hubble-ui-backend:v0.12.1 $dstRegistry/cilium/hubble-ui-backend:v0.12.1
+      docker push $dstRegistry/cilium/hubble-ui-backend:v0.12.1
+      docker tag cilium/hubble-ui:v0.12.1 $dstRegistry/cilium/hubble-ui:v0.12.1
+      docker push $dstRegistry/cilium/hubble-ui:v0.12.1
       ;;
 
     # flannel image
@@ -455,10 +460,10 @@ function get_extra_images() {
       else
         docker load -i "$imageDir/flannel_$flannelVer.tar"
       fi
-      docker tag "flannel/flannel:$flannelVer" "easzlab.io.local:5000/flannel/flannel:$flannelVer"
-      docker push "easzlab.io.local:5000/flannel/flannel:$flannelVer"
-      docker tag "flannel/flannel-cni-plugin:v1.2.0" "easzlab.io.local:5000/flannel/flannel-cni-plugin:v1.2.0"
-      docker push "easzlab.io.local:5000/flannel/flannel-cni-plugin:v1.2.0"
+      docker tag "flannel/flannel:$flannelVer" "$dstRegistry/flannel/flannel:$flannelVer"
+      docker push "$dstRegistry/flannel/flannel:$flannelVer"
+      docker tag "flannel/flannel-cni-plugin:v1.2.0" "$dstRegistry/flannel/flannel-cni-plugin:v1.2.0"
+      docker push "$dstRegistry/flannel/flannel-cni-plugin:v1.2.0"
       ;;
 
     # kubeapps images
@@ -480,18 +485,18 @@ function get_extra_images() {
       else
         docker load -i "$imageDir/kubeapps_$kubeappsVer.tar"
       fi
-      docker tag "bitnami/kubeapps-apis:2.7.0-debian-11-r10" "easzlab.io.local:5000/bitnami/kubeapps-apis:2.7.0-debian-11-r10"
-      docker tag "bitnami/kubeapps-apprepository-controller:2.7.0-scratch-r0" "easzlab.io.local:5000/bitnami/kubeapps-apprepository-controller:2.7.0-scratch-r0"
-      docker tag "bitnami/kubeapps-asset-syncer:2.7.0-scratch-r0" "easzlab.io.local:5000/bitnami/kubeapps-asset-syncer:2.7.0-scratch-r0"
-      docker tag "bitnami/kubeapps-dashboard:2.7.0-debian-11-r12" "easzlab.io.local:5000/bitnami/kubeapps-dashboard:2.7.0-debian-11-r12"
-      docker tag "bitnami/nginx:1.23.4-debian-11-r18" "easzlab.io.local:5000/bitnami/nginx:1.23.4-debian-11-r18"
-      docker tag "bitnami/postgresql:15.3.0-debian-11-r0" "easzlab.io.local:5000/bitnami/postgresql:15.3.0-debian-11-r0"
-      docker push "easzlab.io.local:5000/bitnami/kubeapps-apis:2.7.0-debian-11-r10"
-      docker push "easzlab.io.local:5000/bitnami/kubeapps-apprepository-controller:2.7.0-scratch-r0"
-      docker push "easzlab.io.local:5000/bitnami/kubeapps-asset-syncer:2.7.0-scratch-r0"
-      docker push "easzlab.io.local:5000/bitnami/kubeapps-dashboard:2.7.0-debian-11-r12"
-      docker push "easzlab.io.local:5000/bitnami/nginx:1.23.4-debian-11-r18"
-      docker push "easzlab.io.local:5000/bitnami/postgresql:15.3.0-debian-11-r0"
+      docker tag "bitnami/kubeapps-apis:2.7.0-debian-11-r10" "$dstRegistry/bitnami/kubeapps-apis:2.7.0-debian-11-r10"
+      docker tag "bitnami/kubeapps-apprepository-controller:2.7.0-scratch-r0" "$dstRegistry/bitnami/kubeapps-apprepository-controller:2.7.0-scratch-r0"
+      docker tag "bitnami/kubeapps-asset-syncer:2.7.0-scratch-r0" "$dstRegistry/bitnami/kubeapps-asset-syncer:2.7.0-scratch-r0"
+      docker tag "bitnami/kubeapps-dashboard:2.7.0-debian-11-r12" "$dstRegistry/bitnami/kubeapps-dashboard:2.7.0-debian-11-r12"
+      docker tag "bitnami/nginx:1.23.4-debian-11-r18" "$dstRegistry/bitnami/nginx:1.23.4-debian-11-r18"
+      docker tag "bitnami/postgresql:15.3.0-debian-11-r0" "$dstRegistry/bitnami/postgresql:15.3.0-debian-11-r0"
+      docker push "$dstRegistry/bitnami/kubeapps-apis:2.7.0-debian-11-r10"
+      docker push "$dstRegistry/bitnami/kubeapps-apprepository-controller:2.7.0-scratch-r0"
+      docker push "$dstRegistry/bitnami/kubeapps-asset-syncer:2.7.0-scratch-r0"
+      docker push "$dstRegistry/bitnami/kubeapps-dashboard:2.7.0-debian-11-r12"
+      docker push "$dstRegistry/bitnami/nginx:1.23.4-debian-11-r18"
+      docker push "$dstRegistry/bitnami/postgresql:15.3.0-debian-11-r0"
       ;;
 
     # kube-ovn images
@@ -502,8 +507,8 @@ function get_extra_images() {
       else
         docker load -i "$imageDir/kube-ovn_$kubeOvnVer.tar"
       fi
-      docker tag "kubeovn/kube-ovn:$kubeOvnVer" "easzlab.io.local:5000/kubeovn/kube-ovn:$kubeOvnVer"
-      docker push "easzlab.io.local:5000/kubeovn/kube-ovn:$kubeOvnVer"
+      docker tag "kubeovn/kube-ovn:$kubeOvnVer" "$dstRegistry/kubeovn/kube-ovn:$kubeOvnVer"
+      docker push "$dstRegistry/kubeovn/kube-ovn:$kubeOvnVer"
       ;;
 
     # kube-router images
@@ -514,8 +519,8 @@ function get_extra_images() {
       else
         docker load -i "$imageDir/kube-router_$kubeRouterVer.tar"
       fi
-      docker tag "cloudnativelabs/kube-router:$kubeRouterVer" "easzlab.io.local:5000/cloudnativelabs/kube-router:$kubeRouterVer"
-      docker push "easzlab.io.local:5000/cloudnativelabs/kube-router:$kubeRouterVer"
+      docker tag "cloudnativelabs/kube-router:$kubeRouterVer" "$dstRegistry/cloudnativelabs/kube-router:$kubeRouterVer"
+      docker push "$dstRegistry/cloudnativelabs/kube-router:$kubeRouterVer"
       ;;
 
     # local-path-provisioner image
@@ -526,8 +531,8 @@ function get_extra_images() {
       else
         docker load -i "$imageDir/local-path-provisioner_$localpathProvisionerVer.tar"
       fi
-      docker tag "rancher/local-path-provisioner:$localpathProvisionerVer" "easzlab.io.local:5000/rancher/local-path-provisioner:$localpathProvisionerVer"
-      docker push "easzlab.io.local:5000/rancher/local-path-provisioner:$localpathProvisionerVer"
+      docker tag "rancher/local-path-provisioner:$localpathProvisionerVer" "$dstRegistry/rancher/local-path-provisioner:$localpathProvisionerVer"
+      docker push "$dstRegistry/rancher/local-path-provisioner:$localpathProvisionerVer"
       ;;
 
     # network-check images
@@ -539,10 +544,10 @@ function get_extra_images() {
       else
         docker load -i "$imageDir/network-check.tar"
       fi
-      docker tag easzlab/json-mock:v1.3.0 easzlab.io.local:5000/cilium/json-mock:v1.3.0
-      docker push easzlab.io.local:5000/cilium/json-mock:v1.3.0
-      docker tag easzlab/alpine-curl:v7.85.0 easzlab.io.local:5000/easzlab/alpine-curl:v7.85.0
-      docker push easzlab.io.local:5000/easzlab/alpine-curl:v7.85.0
+      docker tag easzlab/json-mock:v1.3.0 $dstRegistry/cilium/json-mock:v1.3.0
+      docker push $dstRegistry/cilium/json-mock:v1.3.0
+      docker tag easzlab/alpine-curl:v7.85.0 $dstRegistry/easzlab/alpine-curl:v7.85.0
+      docker push $dstRegistry/easzlab/alpine-curl:v7.85.0
       ;;
 
     # nfs-provisioner image
@@ -553,8 +558,8 @@ function get_extra_images() {
       else
         docker load -i "$imageDir/nfs-provisioner_$nfsProvisionerVer.tar"
       fi
-      docker tag "easzlab/nfs-subdir-external-provisioner:$nfsProvisionerVer" "easzlab.io.local:5000/easzlab/nfs-subdir-external-provisioner:$nfsProvisionerVer"
-      docker push "easzlab.io.local:5000/easzlab/nfs-subdir-external-provisioner:$nfsProvisionerVer"
+      docker tag "easzlab/nfs-subdir-external-provisioner:$nfsProvisionerVer" "$dstRegistry/easzlab/nfs-subdir-external-provisioner:$nfsProvisionerVer"
+      docker push "$dstRegistry/easzlab/nfs-subdir-external-provisioner:$nfsProvisionerVer"
       ;;
 
     # prometheus chart images
@@ -582,24 +587,24 @@ function get_extra_images() {
       else
         docker load -i "$imageDir/prometheus-chart_$promChartVer.tar"
       fi
-      docker tag easzlab/kube-state-metrics:v2.8.2 easzlab.io.local:5000/prometheus/kube-state-metrics:v2.8.2
-      docker push easzlab.io.local:5000/prometheus/kube-state-metrics:v2.8.2
-      docker tag easzlab/kube-webhook-certgen:v1.5.1 easzlab.io.local:5000/prometheus/kube-webhook-certgen:v1.5.1
-      docker push easzlab.io.local:5000/prometheus/kube-webhook-certgen:v1.5.1
-      docker tag grafana/grafana:9.4.7 easzlab.io.local:5000/prometheus/grafana:9.4.7
-      docker push easzlab.io.local:5000/prometheus/grafana:9.4.7
-      docker tag quay.io/kiwigrid/k8s-sidecar:1.22.0 easzlab.io.local:5000/prometheus/k8s-sidecar:1.22.0
-      docker push easzlab.io.local:5000/prometheus/k8s-sidecar:1.22.0
-      docker tag quay.io/prometheus-operator/prometheus-config-reloader:v0.63.0 easzlab.io.local:5000/prometheus/prometheus-config-reloader:v0.63.0
-      docker push easzlab.io.local:5000/prometheus/prometheus-config-reloader:v0.63.0
-      docker tag quay.io/prometheus-operator/prometheus-operator:v0.63.0 easzlab.io.local:5000/prometheus/prometheus-operator:v0.63.0
-      docker push easzlab.io.local:5000/prometheus/prometheus-operator:v0.63.0
-      docker tag quay.io/prometheus/alertmanager:v0.25.0 easzlab.io.local:5000/prometheus/alertmanager:v0.25.0
-      docker push easzlab.io.local:5000/prometheus/alertmanager:v0.25.0
-      docker tag quay.io/prometheus/node-exporter:v1.5.0 easzlab.io.local:5000/prometheus/node-exporter:v1.5.0
-      docker push easzlab.io.local:5000/prometheus/node-exporter:v1.5.0
-      docker tag quay.io/prometheus/prometheus:v2.42.0 easzlab.io.local:5000/prometheus/prometheus:v2.42.0
-      docker push easzlab.io.local:5000/prometheus/prometheus:v2.42.0
+      docker tag easzlab/kube-state-metrics:v2.8.2 $dstRegistry/prometheus/kube-state-metrics:v2.8.2
+      docker push $dstRegistry/prometheus/kube-state-metrics:v2.8.2
+      docker tag easzlab/kube-webhook-certgen:v1.5.1 $dstRegistry/prometheus/kube-webhook-certgen:v1.5.1
+      docker push $dstRegistry/prometheus/kube-webhook-certgen:v1.5.1
+      docker tag grafana/grafana:9.4.7 $dstRegistry/prometheus/grafana:9.4.7
+      docker push $dstRegistry/prometheus/grafana:9.4.7
+      docker tag quay.io/kiwigrid/k8s-sidecar:1.22.0 $dstRegistry/prometheus/k8s-sidecar:1.22.0
+      docker push $dstRegistry/prometheus/k8s-sidecar:1.22.0
+      docker tag quay.io/prometheus-operator/prometheus-config-reloader:v0.63.0 $dstRegistry/prometheus/prometheus-config-reloader:v0.63.0
+      docker push $dstRegistry/prometheus/prometheus-config-reloader:v0.63.0
+      docker tag quay.io/prometheus-operator/prometheus-operator:v0.63.0 $dstRegistry/prometheus/prometheus-operator:v0.63.0
+      docker push $dstRegistry/prometheus/prometheus-operator:v0.63.0
+      docker tag quay.io/prometheus/alertmanager:v0.25.0 $dstRegistry/prometheus/alertmanager:v0.25.0
+      docker push $dstRegistry/prometheus/alertmanager:v0.25.0
+      docker tag quay.io/prometheus/node-exporter:v1.5.0 $dstRegistry/prometheus/node-exporter:v1.5.0
+      docker push $dstRegistry/prometheus/node-exporter:v1.5.0
+      docker tag quay.io/prometheus/prometheus:v2.42.0 $dstRegistry/prometheus/prometheus:v2.42.0
+      docker push $dstRegistry/prometheus/prometheus:v2.42.0
       ;;
 
     *)

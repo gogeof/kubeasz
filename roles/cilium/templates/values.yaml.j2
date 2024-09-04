@@ -1,5 +1,5 @@
 image:
-  repository: "easzlab.io.local:5000/cilium/cilium"
+  repository: "{{ DST_REGISTRY_ALL }}/cilium/cilium"
   tag: "v{{ cilium_ver }}"
   useDigest: false
 
@@ -23,7 +23,7 @@ hubble:
   relay:
     enabled: true
     image:
-      repository: "easzlab.io.local:5000/cilium/hubble-relay"
+      repository: "{{ DST_REGISTRY_ALL }}/cilium/hubble-relay"
       tag: "v{{ cilium_ver }}"
       useDigest: false
   ui:
@@ -34,11 +34,11 @@ hubble:
 {% endif %}
     backend:
       image:
-        repository: "easzlab.io.local:5000/cilium/hubble-ui-backend"
+        repository: "{{ DST_REGISTRY_ALL }}/cilium/hubble-ui-backend"
         tag: "v0.12.1"
     frontend:
       image:
-        repository: "easzlab.io.local:5000/cilium/hubble-ui"
+        repository: "{{ DST_REGISTRY_ALL }}/cilium/hubble-ui"
         tag: "v0.12.1"
 {% endif %}
 
@@ -76,7 +76,7 @@ etcd:
 operator:
   enabled: true
   image:
-    repository: "easzlab.io.local:5000/cilium/operator"
+    repository: "{{ DST_REGISTRY_ALL }}/cilium/operator"
     tag: "v{{ cilium_ver }}"
     useDigest: false
   replicas: 1

@@ -145,7 +145,7 @@ spec:
               fieldPath: metadata.namespace
         - name: EVENT_QUEUE_DEPTH
           value: "5000"
-        image: easzlab.io.local:5000/flannel/flannel:{{ flannel_ver }}
+        image: {{ DST_REGISTRY_ALL }}/flannel/flannel:{{ flannel_ver }}
         name: kube-flannel
         resources:
           requests:
@@ -172,7 +172,7 @@ spec:
         - /opt/cni/bin/flannel
         command:
         - cp
-        image: easzlab.io.local:5000/flannel/flannel-cni-plugin:v1.2.0
+        image: {{ DST_REGISTRY_ALL }}/flannel/flannel-cni-plugin:v1.2.0
         name: install-cni-plugin
         volumeMounts:
         - mountPath: /opt/cni/bin
@@ -183,7 +183,7 @@ spec:
         - /etc/cni/net.d/10-flannel.conflist
         command:
         - cp
-        image: easzlab.io.local:5000/flannel/flannel:{{ flannel_ver }}
+        image: {{ DST_REGISTRY_ALL }}/flannel/flannel:{{ flannel_ver }}
         name: install-cni
         volumeMounts:
         - mountPath: /etc/cni/net.d
