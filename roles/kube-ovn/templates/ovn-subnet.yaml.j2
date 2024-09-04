@@ -1,0 +1,15 @@
+apiVersion: kubeovn.io/v1
+kind: Subnet
+metadata:
+  name: join
+spec:
+  cidrBlock: 100.121.0.0/16
+  default: false
+  excludeIps:
+  - 100.121.0.1
+  gateway: 100.121.0.1
+  gatewayNode: ""
+  gatewayType: ""
+  natOutgoing: false
+  private: false
+  protocol: IPv4

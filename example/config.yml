@@ -2,11 +2,13 @@
 # prepare
 ############################
 # 可选离线安装系统软件包 (offline|online)
-INSTALL_SOURCE: "online"
+INSTALL_SOURCE: "offline"
 
 # 可选进行系统安全加固 github.com/dev-sec/ansible-collection-hardening
 OS_HARDEN: false
 
+# 目标镜像仓库
+DST_REGISTRY: "registry-c.cmft.com/cmhk-grd-paas-portal-public"
 
 ############################
 # role:deploy
@@ -49,7 +51,7 @@ ETCD_WAL_DIR: ""
 ############################
 # ------------------------------------------- containerd
 # [.]启用容器仓库镜像
-ENABLE_MIRROR_REGISTRY: true
+ENABLE_MIRROR_REGISTRY: false
 
 # [containerd]基础容器镜像
 SANDBOX_IMAGE: "easzlab.io.local:5000/easzlab/pause:__pause__"
@@ -65,7 +67,7 @@ DOCKER_STORAGE_DIR: "/var/lib/docker"
 ENABLE_REMOTE_API: false
 
 # [docker]信任的HTTP仓库
-INSECURE_REG: '["http://easzlab.io.local:5000"]'
+INSECURE_REG: '[]'
 
 
 ############################
@@ -73,8 +75,7 @@ INSECURE_REG: '["http://easzlab.io.local:5000"]'
 ############################
 # k8s 集群 master 节点证书配置，可以添加多个ip和域名（比如增加公网ip和域名）
 MASTER_CERT_HOSTS:
-  - "10.1.1.1"
-  - "k8s.easzlab.io"
+  - "10.244.1.1"
   #- "www.test.com"
 
 # node 节点上 pod 网段掩码长度（决定每个节点最多能分配的pod ip地址）
@@ -90,11 +91,11 @@ NODE_CIDR_LEN: 24
 KUBELET_ROOT_DIR: "/var/lib/kubelet"
 
 # node节点最大pod 数
-MAX_PODS: 110
+MAX_PODS: 250
 
 # 配置为kube组件（kubelet,kube-proxy,dockerd等）预留的资源量
 # 数值设置详见templates/kubelet-config.yaml.j2
-KUBE_RESERVED_ENABLED: "no"
+KUBE_RESERVED_ENABLED: "yes"
 
 # k8s 官方不建议草率开启 system-reserved, 除非你基于长期监控，了解系统的资源占用状况；
 # 并且随着系统运行时间，需要适当增加资源预留，数值设置详见templates/kubelet-config.yaml.j2
@@ -158,7 +159,7 @@ kube_ovn_ver: "__kube_ovn__"
 OVERLAY_TYPE: "full"
 
 # [kube-router]NetworkPolicy 支持开关
-FIREWALL_ENABLE: true
+FIREWALL_ENABLE: false
 
 # [kube-router]kube-router 镜像版本
 kube_router_ver: "__kube_router__"
@@ -181,13 +182,13 @@ metricsserver_install: "yes"
 metricsVer: "__metrics__"
 
 # dashboard 自动安装
-dashboard_install: "yes"
+dashboard_install: "no"
 dashboardVer: "__dashboard__"
 dashboardMetricsScraperVer: "__dash_metrics__"
 
 # prometheus 自动安装
-prom_install: "no"
-prom_namespace: "monitor"
+prom_install: "yes"
+prom_namespace: "openshift-monitoring"
 prom_chart_ver: "__prom_chart__"
 
 # nfs-provisioner 自动安装
@@ -199,8 +200,13 @@ nfs_server: "192.168.1.10"
 nfs_path: "/data/nfs"
 
 # network-check 自动安装
-network_check_enabled: false 
+network_check_enabled: false
 network_check_schedule: "*/5 * * * *"
+
+# nginx-ingress-controller 自动安装
+nginx_ingress_install: "yes"
+nginx_ingress_namespace: "openshift-ingress"
+nginx_ingress_ver: "__nginx_ingress_chart__"
 
 ############################
 # role:harbor

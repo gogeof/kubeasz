@@ -38,7 +38,7 @@ eventBurst: 10
 eventRecordQPS: 5
 evictionHard:
   imagefs.available: 15%
-  memory.available: 300Mi
+  memory.available: 500Mi
   nodefs.available: 10%
   nodefs.inodesFree: 5%
 evictionPressureTransitionPeriod: 5m0s
@@ -65,7 +65,7 @@ nodeLeaseDurationSeconds: 40
 nodeStatusReportFrequency: 1m0s
 nodeStatusUpdateFrequency: 10s
 oomScoreAdj: -999
-podPidsLimit: -1
+podPidsLimit: 4096
 port: 10250
 # disable readOnlyPort 
 readOnlyPort: 0

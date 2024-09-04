@@ -38,16 +38,16 @@ SECURE_PORT="6443"
 CONTAINER_RUNTIME="containerd"
 
 # Network plugins supported: calico, flannel, kube-router, cilium, kube-ovn
-CLUSTER_NETWORK="calico"
+CLUSTER_NETWORK="kube-ovn"
 
 # Service proxy mode of kube-proxy: 'iptables' or 'ipvs'
 PROXY_MODE="ipvs"
 
 # K8S Service CIDR, not overlap with node(host) networking
-SERVICE_CIDR="10.68.0.0/16"
+SERVICE_CIDR="10.245.0.0/16"
 
 # Cluster CIDR (Pod CIDR), not overlap with node(host) networking
-CLUSTER_CIDR="172.20.0.0/16"
+CLUSTER_CIDR="10.244.0.0/16"
 
 # NodePort Range
 NODE_PORT_RANGE="30000-32767"

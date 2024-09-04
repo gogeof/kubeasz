@@ -15,3 +15,10 @@ manifests/storage/*
 
 # cluster instances
 clusters/
+
+# develop temp files
+.idea/
+*/.DS_Store
+*/*/.DS_Store
+roles/cluster-addon/files/kube-prometheus-stack
+

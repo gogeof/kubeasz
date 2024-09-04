@@ -6,6 +6,18 @@
   with_items:
   - etcd
   - etcdctl
+  - etcdutl
+  tags: upgrade_etcd
+
+- name: 创建etcd备份和碎片整理脚本
+  template: src={{ item }} dest={{ bin_dir }}/{{ item }} mode=0755
+  connection: local
+  run_once: true
+  with_items:
+    - etcd.env
+    - etcd-common-tools
+    - etcd-backup.sh
+    - etcd-defrag.sh
   tags: upgrade_etcd
 
 - name: 创建etcd证书请求
@@ -52,3 +64,21 @@
   retries: 8
   delay: 8
   tags: upgrade_etcd, restart_etcd, force_change_certs
+
+- name: 添加 etcd 自动备份任务
+  cron:
+    name: "etcd-backup"
+    minute: "0"
+    hour: "3"
+    job: "{{ bin_dir }}/etcd-backup.sh"
+    user: root
+    state: present
+  tags: upgrade_etcd
+
+- name: 添加 etcd 自动碎片整理任务
+  cron:
+    name: "etcd-defrag"
+    minute: "0"
+    hour: "4"
+    job: "{{ bin_dir }}/etcd-defrag.sh"
+  tags: upgrade_etcd
