@@ -12,6 +12,10 @@ set -o errexit
 set -o pipefail
 #set -o xtrace
 
+localRegistry=false
+dstRegistry=registry-c.cmft.com/cmhk-grd-paas-portal-public
+dstInsecure=false
+
 # default settings, can be overridden by cmd line options, see usage
 DOCKER_VER=20.10.22
 KUBEASZ_VER=3.5.3
@@ -40,9 +44,6 @@ nginxIngressChartVer=0.44.0
 # images not downloaded
 kubeRouterVer=v0.3.1
 kubeOvnVer=v1.5.3
-
-dstRegistry=registry-c.cmft.com/cmhk-grd-paas-portal-public
-dstInsecure=false
 
 function usage() {
   echo -e "\033[33mUsage:\033[0m ezdown [options] [args]"
@@ -498,8 +499,10 @@ function download_all() {
   install_docker && \
   get_kubeasz && \
   get_k8s_bin && \
-  get_ext_bin && \
-  start_local_registry && \
+  get_ext_bin
+  if [[ "x$localRegistry" == "xtrue" ]];then
+      start_local_registry
+  fi
   get_default_images
 }
 
