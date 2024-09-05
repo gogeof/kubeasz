@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-pv1
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: prometheus-local-storage
+  local:
+    path: /var/lib/data/prometheus
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: paas.cmft.com/roles
+              operator: In
+              values:
+                - monitor
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-pv2
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: prometheus-local-storage
+  local:
+    path: /var/lib/data/prometheus
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: paas.cmft.com/roles
+              operator: In
+              values:
+                - monitor

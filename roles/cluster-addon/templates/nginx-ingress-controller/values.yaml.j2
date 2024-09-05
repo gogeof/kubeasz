@@ -1,649 +1,1164 @@
-controller:
-  ## The name of the Ingress Controller daemonset or deployment.
-  name: controller
+# Copyright Broadcom, Inc. All Rights Reserved.
+# SPDX-License-Identifier: APACHE-2.0
 
-  ## The kind of the Ingress Controller installation - deployment or daemonset.
-  kind: deployment
+## @section Global parameters
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
 
-  ## The selectorLabels used to override the default values.
-  selectorLabels: {}
+## @param global.imageRegistry Global Docker image registry
+## @param global.imagePullSecrets Global Docker registry secret names as an array
+##
+global:
+  imageRegistry: "{{ DST_REGISTRY }}"
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+  ## Compatibility adaptations for Kubernetes platforms
+  ##
+  compatibility:
+    ## Compatibility adaptations for Openshift
+    ##
+    openshift:
+      ## @param global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)
+      ##
+      adaptSecurityContext: auto
+## @section Common parameters
 
-  ## Annotations for deployments and daemonsets
-  annotations: {}
+## @param kubeVersion Force target Kubernetes version (using Helm capabilities if not set)
+##
+kubeVersion: ""
+## @param nameOverride String to partially override common.names.fullname
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override common.names.fullname
+##
+fullnameOverride: ""
+## @param namespaceOverride String to fully override common.names.namespace
+##
+namespaceOverride: ""
+## @param commonLabels Add labels to all the deployed resources
+##
+commonLabels: {}
+## @param commonAnnotations Add annotations to all the deployed resources
+##
+commonAnnotations: {}
+## @param extraDeploy Array of extra objects to deploy with the release
+##
+extraDeploy: []
+## @param clusterDomain Kubernetes cluster domain name
+##
+clusterDomain: cluster.local
+## @section Nginx Ingress Controller parameters
 
-  ## Deploys the Ingress Controller for NGINX Plus.
-  nginxplus: false
+## Bitnami NGINX Ingress controller image version
+## ref: https://hub.docker.com/r/bitnami/nginx-ingress-controller/tags/
+## @param image.registry [default: REGISTRY_NAME] Nginx Ingress Controller image registry
+## @param image.repository [default: REPOSITORY_NAME/nginx-ingress-controller] Nginx Ingress Controller image repository
+## @skip image.tag Nginx Ingress Controller image tag (immutable tags are recommended)
+## @param image.digest Nginx Ingress Controller image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+## @param image.pullPolicy Nginx Ingress Controller image pull policy
+## @param image.pullSecrets Specify docker-registry secret names as an array
+##
+image:
+  registry: {{ DST_REGISTRY }}
+  repository: {{ DST_REGISTRY_PREFIX }}/bitnami/nginx-ingress-controller
+  tag: 1.11.2-debian-12-r0
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ## Example:
+  ## pullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  pullSecrets: []
+## @param containerPorts.http Nginx Ingress Controller HTTP port
+## @param containerPorts.https Nginx Ingress Controller HTTPS port
+## @param containerPorts.defaultServer Nginx Ingress Controller default server port
+## @param containerPorts.metrics Nginx Ingress Controller metrics port
+## @param containerPorts.profiler Nginx Ingress Controller profiler port
+## @param containerPorts.status Nginx Ingress Controller status port
+## @param containerPorts.stream Nginx Ingress Controller stream port
+##
+containerPorts:
+  http: 8080
+  https: 8443
+  defaultServer: 8181
+  metrics: 10254
+  profiler: 10245
+  status: 10246
+  stream: 10247
+## @param automountServiceAccountToken Mount Service Account token in pod
+##
+automountServiceAccountToken: true
+## @param hostAliases Deployment pod host aliases
+## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+##
+hostAliases: []
+## @param config Custom configuration options for NGINX
+## ref: https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/
+##
+config: {}
+## @param proxySetHeaders Custom headers before sending traffic to backends
+## ref: https://github.com/kubernetes/ingress-nginx/tree/master/docs/examples/customization/custom-headers
+##
+proxySetHeaders: {}
+## @param addHeaders Custom headers before sending response traffic to the client
+## ref: https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/#add-headers
+##
+addHeaders: {}
+## @param defaultBackendService Default 404 backend service; required only if `defaultBackend.enabled = false`
+## Must be <namespace>/<service_name>
+##
+defaultBackendService: ""
+## @param electionID Election ID to use for status update
+##
+electionID: ingress-controller-leader
+## @param allowSnippetAnnotations Allow users to set snippet annotations
+##
+allowSnippetAnnotations: false
+## @param reportNodeInternalIp If using `hostNetwork=true`, setting `reportNodeInternalIp=true`, will pass the flag `report-node-internal-ip-address` to Nginx Ingress Controller
+## Bare-metal considerations via the host network
+## ref: https://kubernetes.github.io/ingress-nginx/deploy/baremetal/#via-the-host-network
+##
+reportNodeInternalIp: false
+## @param watchIngressWithoutClass Process Ingress objects without ingressClass annotation/ingressClassName field
+##
+watchIngressWithoutClass: false
+## Configuring this doesn't affect `kubernetes.io/ingress.class` annotation. See `extraArgs` below how to configure processing of custom annotation.
+## @param ingressClassResource.name Name of the IngressClass resource
+## @param ingressClassResource.enabled Create the IngressClass resource
+## @param ingressClassResource.default Set the created IngressClass resource as default class
+## @param ingressClassResource.controllerClass IngressClass identifier for the controller
+## @param ingressClassResource.parameters Optional parameters for the controller
+##
+ingressClassResource:
+  name: nginx
+  enabled: true
+  default: true
+  controllerClass: "k8s.io/ingress-nginx"
+  parameters: {}
+## Allows customization of the external service
+## the ingress will be bound to via DNS
+##
+publishService:
+  ## @param publishService.enabled Set the endpoint records on the Ingress objects to reflect those on the service
+  ##
+  enabled: false
+  ## @param publishService.pathOverride Allows overriding of the publish service to bind to
+  ## Must be <namespace>/<service_name>
+  ##
+  pathOverride: ""
+## @param scope.enabled Limit the scope of the controller.
+## @param scope.namespace Scope namespace. Defaults to `.Release.Namespace`
+##
+scope:
+  enabled: false
+  namespace: ""
+## @param configMapNamespace Allows customization of the configmap / nginx-configmap namespace
+## Defaults to .Release.Namespace
+##
+configMapNamespace: ""
+## @param tcpConfigMapNamespace Allows customization of the tcp-services-configmap namespace
+## Defaults to .Release.Namespace
+##
+tcpConfigMapNamespace: ""
+## @param udpConfigMapNamespace Allows customization of the udp-services-configmap namespace
+## Defaults to .Release.Namespace
+##
+udpConfigMapNamespace: ""
+## @param maxmindLicenseKey License key used to download Geolite2 database
+##
+maxmindLicenseKey: ""
+## @param dhParam A base64ed Diffie-Hellman parameter
+## This can be generated with: openssl dhparam 4096 2> /
+## Ref: https://github.com/krmichel/ingress-nginx/blob/master/docs/examples/customization/ssl-dh-param
+dhParam: ""
+## @param tcp TCP service key:value pairs
+## ref: https://github.com/kubernetes/contrib/tree/master/ingress/controllers/nginx/examples/tcp
+## e.g:
+## tcp:
+##   8080: "default/example-tcp-svc:9000"
+##
+tcp: {}
+## @param udp UDP service key:value pairs
+## ref: https://github.com/kubernetes/contrib/tree/master/ingress/controllers/nginx/examples/udp
+## e.g:
+## udp:
+##   53: "kube-system/kube-dns:53"
+##
+udp: {}
+## @param command Override default container command (useful when using custom images)
+##
+command: []
+## @param args Override default container args (useful when using custom images)
+##
+args: []
+## @param lifecycleHooks for the %%MAIN_CONTAINER_NAME%% container(s) to automate configuration before or after startup
+##
+lifecycleHooks: {}
+## @param extraArgs Additional command line arguments to pass to nginx-ingress-controller
+## E.g. to specify the default SSL certificate you can use
+## extraArgs:
+##   default-ssl-certificate: "<namespace>/<secret_name>"
+##   ingress-class: nginx
+##
+extraArgs: {}
+## @param extraEnvVars Extra environment variables to be set on Nginx Ingress container
+## E.g:
+## extraEnvs:
+##   - name: FOO
+##     valueFrom:
+##       secretKeyRef:
+##         key: FOO
+##         name: secret-resource
+##
+extraEnvVars: []
+## @param extraEnvVarsCM Name of a existing ConfigMap containing extra environment variables
+##
+extraEnvVarsCM: ""
+## @param extraEnvVarsSecret Name of a existing Secret containing extra environment variables
+##
+extraEnvVarsSecret: ""
+## @section Nginx Ingress deployment / daemonset parameters
 
-  ## Timeout in milliseconds which the Ingress Controller will wait for a successful NGINX reload after a change or at the initial start.
-  nginxReloadTimeout: 60000
-
-  ## Support for App Protect WAF
-  appprotect:
-    ## Enable the App Protect WAF module in the Ingress Controller.
-    enable: false
-    ## Enables App Protect WAF v5.
-    v5: false
-    ## Sets log level for App Protect WAF. Allowed values: fatal, error, warn, info, debug, trace
-    # logLevel: fatal
-
-    # Volumes for App Protect WAF v5
-    # Required volumes are: app-protect-bd-config, app-protect-config, and app-protect-bundles
-    volumes:
-      - name: app-protect-bd-config
-        emptyDir: {}
-      - name: app-protect-config
-        emptyDir: {}
-      - name: app-protect-bundles
-        emptyDir: {}
-
-    ## Configuration for App Protect WAF v5 Enforcer
-    enforcer:
-      # Host that the App Protect WAF v5 Enforcer runs on.
-      # This will normally be "127.0.0.1" as the Enforcer container
-      # will run in the same pod as the Ingress Controller container.
-      host: "127.0.0.1"
-      # Port that the App Protect WAF v5 Enforcer runs on.
-      port: 50000
-      image:
-        ## The image repository of the App Protect WAF v5 Enforcer.
-        repository: private-registry.nginx.com/nap/waf-enforcer
-
-        ## The tag of the App Protect WAF v5 Enforcer image.
-        tag: "5.2.0"
-        ## The digest of the App Protect WAF v5 Enforcer image.
-        ## If digest is specified it has precedence over tag and will be used instead
-        # digest: "sha256:CHANGEME"
-
-        ## The pull policy for the App Protect WAF v5 Enforcer image.
-        pullPolicy: IfNotPresent
-      securityContext: {}
-
-    ## Configuration for App Protect WAF v5 Configuration Manager
-    configManager:
-      image:
-        ## The image repository of the App Protect WAF v5 Configuration Manager.
-        repository: private-registry.nginx.com/nap/waf-config-mgr
-
-        ## The tag of the App Protect WAF v5 Configuration Manager image.
-        tag: "5.2.0"
-        ## The digest of the App Protect WAF v5 Configuration Manager image.
-        ## If digest is specified it has precedence over tag and will be used instead
-        # digest: "sha256:CHANGEME"
-
-        ## The pull policy for the App Protect WAF v5 Configuration Manager image.
-        pullPolicy: IfNotPresent
-      securityContext:
-        allowPrivilegeEscalation: false
-        runAsUser: 101 #nginx
-        runAsNonRoot: true
-        capabilities:
-          drop:
-            - all
-
-  ## Support for App Protect DoS
-  appprotectdos:
-    ## Enable the App Protect DoS module in the Ingress Controller.
-    enable: false
-    ## Enable debugging for App Protect DoS.
-    debug: false
-    ## Max number of nginx processes to support.
-    maxWorkers: 0
-    ## Max number of ADMD instances.
-    maxDaemons: 0
-    ## RAM memory size to consume in MB.
-    memory: 0
-
-  ## Enables the Ingress Controller pods to use the host's network namespace.
-  hostNetwork: false
-
-  ## The hostPort configuration for the Ingress Controller pods.
-  hostPort:
-    ## Enables hostPort for the Ingress Controller pods.
-    enable: false
-
-    ## The HTTP hostPort configuration for the Ingress Controller pods.
+## @param kind Install as Deployment or DaemonSet
+##
+kind: Deployment
+## Daemonset configuration
+##
+daemonset:
+  ## @param daemonset.useHostPort If `kind` is `DaemonSet`, this will enable `hostPort` for `TCP/80` and `TCP/443`
+  ##
+  useHostPort: false
+  ## @param daemonset.hostPorts [object] HTTP and HTTPS ports
+  ##
+  hostPorts:
     http: 80
-
-    ## The HTTPS hostPort configuration for the Ingress Controller pods.
     https: 443
+## @param replicaCount Desired number of Controller pods
+##
+replicaCount: 1
+## @param updateStrategy Strategy to use to update Pods
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+##
+updateStrategy: {}
+## @param revisionHistoryLimit The number of old history to retain to allow rollback
+##
+revisionHistoryLimit: 10
+## Controller pods' Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+## @param podSecurityContext.enabled Enable Controller pods' Security Context
+## @param podSecurityContext.fsGroupChangePolicy Set filesystem group change policy
+## @param podSecurityContext.sysctls Set kernel settings using the sysctl interface
+## @param podSecurityContext.supplementalGroups Set filesystem extra groups
+## @param podSecurityContext.fsGroup Group ID for the container filesystem
+##
+podSecurityContext:
+  enabled: true
+  fsGroupChangePolicy: Always
+  sysctls: []
+  supplementalGroups: []
+  fsGroup: 1001
+## Controller containers' Security Context (only main container)
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+## @param containerSecurityContext.enabled Enable Controller containers' Security Context
+## @param containerSecurityContext.allowPrivilegeEscalation Switch to allow priviledge escalation on the Controller container
+## @param containerSecurityContext.seLinuxOptions [object,nullable] Set SELinux options in container
+## @param containerSecurityContext.runAsUser User ID for the Controller container
+## @param containerSecurityContext.runAsGroup Group ID for the Controller container
+## @param containerSecurityContext.readOnlyRootFilesystem Set container's Security Context readOnlyRootFilesystem
+## @param containerSecurityContext.capabilities.drop [array] Linux Kernel capabilities that should be dropped
+## @param containerSecurityContext.capabilities.add [array] Linux Kernel capabilities that should be added
+## @param containerSecurityContext.runAsNonRoot Set container's Security Context runAsNonRoot
+## @param containerSecurityContext.seccompProfile.type Set container's Security Context seccomp profile
+##
+containerSecurityContext:
+  enabled: true
+  allowPrivilegeEscalation: false
+  seLinuxOptions: null
+  runAsUser: 1001
+  runAsGroup: 1001
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+    add: ["NET_BIND_SERVICE"]
+  runAsNonRoot: true
+  seccompProfile:
+    type: "RuntimeDefault"
+## @param minReadySeconds How many seconds a pod needs to be ready before killing the next, during update
+##
+minReadySeconds: 0
+## Controller containers' resource requests and limits
+## ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+## We usually recommend not to specify default resources and to leave this as a conscious
+## choice for the user. This also increases chances charts run on environments with little
+## resources, such as Minikube. If you do want to specify resources, uncomment the following
+## lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+## @param resourcesPreset Set container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if resources is set (resources is recommended for production).
+## More information: https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15
+##
+resourcesPreset: "nano"
+## @param resources Set container requests and limits for different resources like CPU or memory (essential for production workloads)
+## Example:
+## resources:
+##   requests:
+##     cpu: 2
+##     memory: 512Mi
+##   limits:
+##     cpu: 3
+##     memory: 1024Mi
+##
+resources: {}
+## Controller containers' liveness probe. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+## @param livenessProbe.enabled Enable livenessProbe
+## @param livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+## @param livenessProbe.periodSeconds Period seconds for livenessProbe
+## @param livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+## @param livenessProbe.failureThreshold Failure threshold for livenessProbe
+## @param livenessProbe.successThreshold Success threshold for livenessProbe
+##
+livenessProbe:
+  enabled: true
+  failureThreshold: 3
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+## Controller containers' readiness probe. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+## @param readinessProbe.enabled Enable readinessProbe
+## @param readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+## @param readinessProbe.periodSeconds Period seconds for readinessProbe
+## @param readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+## @param readinessProbe.failureThreshold Failure threshold for readinessProbe
+## @param readinessProbe.successThreshold Success threshold for readinessProbe
+##
+readinessProbe:
+  enabled: true
+  failureThreshold: 3
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+## Controller containers' startup probe. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+## @param startupProbe.enabled Enable startupProbe
+## @param startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+## @param startupProbe.periodSeconds Period seconds for startupProbe
+## @param startupProbe.timeoutSeconds Timeout seconds for startupProbe
+## @param startupProbe.failureThreshold Failure threshold for startupProbe
+## @param startupProbe.successThreshold Success threshold for startupProbe
+##
+startupProbe:
+  enabled: false
+  failureThreshold: 3
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+## @param customLivenessProbe Override default liveness probe
+##
+customLivenessProbe: {}
+## @param customReadinessProbe Override default readiness probe
+##
+customReadinessProbe: {}
+## @param customStartupProbe Custom liveness probe for the Web component
+##
+customStartupProbe: {}
+## @param lifecycle LifecycleHooks to set additional configuration at startup
+##
+lifecycle: {}
+## @param podLabels Extra labels for Controller pods
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+##
+podLabels: {}
+## @param podAnnotations Annotations for Controller pods
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+##
+podAnnotations: {}
+## @param priorityClassName Controller priorityClassName
+## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+##
+priorityClassName: ""
+## @param schedulerName Name of the k8s scheduler (other than default)
+## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+##
+schedulerName: ""
+## @param hostNetwork If the Nginx deployment / daemonset should run on the host's network namespace
+## Required on CNI based K8s installations, since CNI and hostport don't mix yet
+## Can be deprecated once https://github.com/kubernetes/kubernetes/issues/23920 is merged
+##
+hostNetwork: false
+## @param dnsPolicy By default, while using host network, name resolution uses the host's DNS
+## Optionally, change this to ClusterFirstWithHostNet in case you have 'hostNetwork: true' if you wish nginx-controller
+## to keep resolving names inside the Kubernetes network
+##
+dnsPolicy: ClusterFirst
+## @param dnsConfig is an object with optional parameters to pass to the DNS resolver
+## The dnsConfig field is optional and it can work with any dnsPolicy settings.
+## However, when a Pod's dnsPolicy is set to "None", the dnsConfig field has to be specified.
+##
+dnsConfig: {}
+## @param terminationGracePeriodSeconds How many seconds to wait before terminating a pod
+##
+terminationGracePeriodSeconds: 60
+## @param podAffinityPreset Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+##
+podAffinityPreset: ""
+## @param podAntiAffinityPreset Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+##
+podAntiAffinityPreset: soft
+## Node affinity preset
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+##
+nodeAffinityPreset:
+  ## @param nodeAffinityPreset.type Node affinity preset type. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+  ##
+  type: ""
+  ## @param nodeAffinityPreset.key Node label key to match. Ignored if `affinity` is set.
+  ## E.g.
+  ## key: "kubernetes.io/e2e-az-name"
+  ##
+  key: ""
+  ## @param nodeAffinityPreset.values Node label values to match. Ignored if `affinity` is set.
+  ## E.g.
+  ## values:
+  ##   - e2e-az1
+  ##   - e2e-az2
+  ##
+  values: []
+## @param affinity Affinity for pod assignment. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+## Note: podAffinityPreset, podAntiAffinityPreset, and nodeAffinityPreset will be ignored when it's set
+##
+affinity: {}
+## @param nodeSelector Node labels for pod assignment. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+##
+nodeSelector: {}
+## @param tolerations Tolerations for pod assignment. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+## @param extraVolumes Optionally specify extra list of additional volumes for Controller pods
+##
+extraVolumes: []
+## @param extraVolumeMounts Optionally specify extra list of additional volumeMounts for Controller container(s)
+##
+extraVolumeMounts: []
+## @param initContainers Add init containers to the controller pods
+## Example:
+## initContainers:
+##   - name: your-image-name
+##     image: your-image
+##     imagePullPolicy: Always
+##     ports:
+##       - name: portname
+##         containerPort: 1234
+##
+initContainers: []
+## @param sidecars Add sidecars to the controller pods.
+## Example:
+## sidecars:
+##   - name: your-image-name
+##     image: your-image
+##     imagePullPolicy: Always
+##     ports:
+##       - name: portname
+##         containerPort: 1234
+##
+sidecars: []
+## @param customTemplate [object] Override NGINX template
+##
+customTemplate:
+  configMapName: ""
+  configMapKey: ""
+## @param topologySpreadConstraints Topology spread constraints rely on node labels to identify the topology domain(s) that each Node is in
+## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+##
+## topologySpreadConstraints:
+##   - maxSkew: 1
+##     topologyKey: failure-domain.beta.kubernetes.io/zone
+##     whenUnsatisfiable: DoNotSchedule
+##     labelSelector:
+##       matchLabels:
+##         app.kubernetes.io/instance: ingress-nginx-internal
+##
+topologySpreadConstraints: []
+## @param podSecurityPolicy.enabled Whether to create a PodSecurityPolicy. WARNING: PodSecurityPolicy is deprecated in Kubernetes v1.21 or later, unavailable in v1.25 or later
+## https://kubernetes.io/docs/concepts/policy/pod-security-policy/
+##
+podSecurityPolicy:
+  enabled: false
+## @section Default backend parameters
 
-  containerPort:
-    ## The HTTP containerPort configuration for the Ingress Controller pods.
-    http: 80
-
-    ## The HTTPS containerPort configuration for the Ingress Controller pods.
-    https: 443
-
-  ## DNS policy for the Ingress Controller pods
-  dnsPolicy: ClusterFirst
-
-  ## Enables debugging for NGINX. Uses the nginx-debug binary. Requires error-log-level: debug in the ConfigMap via `controller.config.entries`.
-  nginxDebug: false
-
-  ## Share process namespace between containers in the Ingress Controller pod.
-  shareProcessNamespace: false
-
-  ## The log level of the Ingress Controller.
-  logLevel: 1
-
-  ## A list of custom ports to expose on the NGINX Ingress Controller pod. Follows the conventional Kubernetes yaml syntax for container ports.
-  customPorts: []
-
+## Default 404 backend
+##
+defaultBackend:
+  ## @param defaultBackend.enabled Enable a default backend based on NGINX
+  ##
+  enabled: true
+  ## @param defaultBackend.automountServiceAccountToken Mount Service Account token in pod
+  ##
+  automountServiceAccountToken: true
+  ## @param defaultBackend.hostAliases Add deployment host aliases
+  ## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+  ##
+  hostAliases: []
+  ## Bitnami NGINX image
+  ## ref: https://hub.docker.com/r/bitnami/nginx/tags/
+  ## @param defaultBackend.image.registry [default: REGISTRY_NAME] Default backend image registry
+  ## @param defaultBackend.image.repository [default: REPOSITORY_NAME/nginx] Default backend image repository
+  ## @skip defaultBackend.image.tag Default backend image tag (immutable tags are recommended)
+  ## @param defaultBackend.image.digest Default backend image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+  ## @param defaultBackend.image.pullPolicy Image pull policy
+  ## @param defaultBackend.image.pullSecrets Specify docker-registry secret names as an array
+  ##
   image:
-    ## The image repository of the Ingress Controller.
-    repository: nginx/nginx-ingress
-
-    ## The tag of the Ingress Controller image. If not specified the appVersion from Chart.yaml is used as a tag.
-    tag: "3.6.2"
-    ## The digest of the Ingress Controller image.
-    ## If digest is specified it has precedence over tag and will be used instead
-    # digest: "sha256:CHANGEME"
-
-    ## The pull policy for the Ingress Controller image.
+    registry: {{ DST_REGISTRY }}
+    repository: {{ DST_REGISTRY_PREFIX }}/bitnami/nginx
+    tag: 1.27.1-debian-12-r0
+    digest: ""
+    ## Specify a imagePullPolicy
+    ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+    ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+    ##
     pullPolicy: IfNotPresent
+    ## Optionally specify an array of imagePullSecrets.
+    ## Secrets must be manually created in the namespace.
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+    ## Example:
+    ## pullSecrets:
+    ##   - myRegistryKeySecretName
+    ##
+    pullSecrets: []
+  ## @param defaultBackend.extraArgs Additional command line arguments to pass to Nginx container
+  ##
+  extraArgs: {}
+  ## @param defaultBackend.containerPort HTTP container port number
+  ##
+  containerPort: 8080
+  ## @param defaultBackend.serverBlockConfig [string] NGINX backend default server block configuration
+  ## Should be compliant with: https://kubernetes.github.io/ingress-nginx/user-guide/default-backend/
+  ##
+  serverBlockConfig: |-
+    location /healthz {
+      return 200;
+    }
 
-  ## The lifecycle of the Ingress Controller pods.
-  lifecycle: {}
-
-  ## The custom ConfigMap to use instead of the one provided by default
-  customConfigMap: ""
-
-  config:
-    ## The name of the ConfigMap used by the Ingress Controller.
-    ## Autogenerated if not set or set to "".
-    # name: nginx-config
-
-    ## The annotations of the Ingress Controller configmap.
-    annotations: {}
-
-    ## The entries of the ConfigMap for customizing NGINX configuration.
-    entries: {}
-
-  ## It is recommended to use your own TLS certificates and keys
-  defaultTLS:
-    ## The base64-encoded TLS certificate for the default HTTPS server.
-    ## Note: It is recommended that you specify your own certificate. Alternatively, omitting the default server secret completely will configure NGINX to reject TLS connections to the default server.
-    cert: ""
-
-    ## The base64-encoded TLS key for the default HTTPS server.
-    ## Note: It is recommended that you specify your own key. Alternatively, omitting the default server secret completely will configure NGINX to reject TLS connections to the default server.
-    key: ""
-
-    ## The secret with a TLS certificate and key for the default HTTPS server.
-    ## The value must follow the following format: `<namespace>/<name>`.
-    ## Used as an alternative to specifying a certificate and key using `controller.defaultTLS.cert` and `controller.defaultTLS.key` parameters.
-    ## Note: Alternatively, omitting the default server secret completely will configure NGINX to reject TLS connections to the default server.
-    ## Format: <namespace>/<secret_name>
-    secret: ""
-
-  wildcardTLS:
-    ## The base64-encoded TLS certificate for every Ingress/VirtualServer host that has TLS enabled but no secret specified.
-    ## If the parameter is not set, for such Ingress/VirtualServer hosts NGINX will break any attempt to establish a TLS connection.
-    cert: ""
-
-    ## The base64-encoded TLS key for every Ingress/VirtualServer host that has TLS enabled but no secret specified.
-    ## If the parameter is not set, for such Ingress/VirtualServer hosts NGINX will break any attempt to establish a TLS connection.
-    key: ""
-
-    ## The secret with a TLS certificate and key for every Ingress/VirtualServer host that has TLS enabled but no secret specified.
-    ## The value must follow the following format: `<namespace>/<name>`.
-    ## Used as an alternative to specifying a certificate and key using `controller.wildcardTLS.cert` and `controller.wildcardTLS.key` parameters.
-    ## Format: <namespace>/<secret_name>
-    secret: ""
-
-  ## The node selector for pod assignment for the Ingress Controller pods.
-  # nodeSelector: {}
-
-  ## The termination grace period of the Ingress Controller pod.
-  terminationGracePeriodSeconds: 30
-
-  ## HorizontalPodAutoscaling (HPA)
-  autoscaling:
-    ## Enables HorizontalPodAutoscaling.
-    enabled: false
-    ## The annotations of the Ingress Controller HorizontalPodAutoscaler.
-    annotations: {}
-    ## Minimum number of replicas for the HPA.
-    minReplicas: 1
-    ## Maximum number of replicas for the HPA.
-    maxReplicas: 3
-    ## The target cpu utilization percentage.
-    targetCPUUtilizationPercentage: 50
-    ## The target memory utilization percentage.
-    targetMemoryUtilizationPercentage: 50
-    ## Custom behavior policies
-    behavior: {}
-
-  ## The resources of the Ingress Controller pods.
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-  # limits:
-  #   cpu: 1
-  #   memory: 1Gi
-
-  ## The security context for the Ingress Controller pods.
-  podSecurityContext:
-    seccompProfile:
-      type: RuntimeDefault
-
-  ## The security context for the Ingress Controller containers.
-  securityContext:
-    {} # Remove curly brackets before adding values
-    # allowPrivilegeEscalation: true
-    # readOnlyRootFilesystem: true
-    # runAsUser: 101 #nginx
-    # runAsNonRoot: true
-    # capabilities:
-    #   drop:
-    #   - ALL
-    #   add:
-    #   - NET_BIND_SERVICE
-
-  ## The security context for the Ingress Controller init container which is used when readOnlyRootFilesystem is set to true.
-  initContainerSecurityContext: {}
-
-  ## The resources for the Ingress Controller init container which is used when readOnlyRootFilesystem is set to true.
-  initContainerResources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    # limits:
-    #   cpu: 1
-    #   memory: 1Gi
-
-  ## The tolerations of the Ingress Controller pods.
-  tolerations: []
-
-  ## The affinity of the Ingress Controller pods.
-  affinity: {}
-
-  ## The topology spread constraints of the Ingress controller pods.
-  # topologySpreadConstraints: {}
-
-  ## The additional environment variables to be set on the Ingress Controller pods.
-  env: []
-  # - name: MY_VAR
-  #   value: myvalue
-
-  ## The volumes of the Ingress Controller pods.
-  volumes: []
-  # - name: extra-conf
-  #   configMap:
-  #     name: extra-conf
-
-  ## The volumeMounts of the Ingress Controller pods.
-  volumeMounts: []
-  # - name: extra-conf
-  #   mountPath: /etc/nginx/conf.d/extra.conf
-  #   subPath: extra.conf
-
-  ## InitContainers for the Ingress Controller pods.
-  initContainers: []
-  # - name: init-container
-  #   image: busybox:1.34
-  #   command: ['sh', '-c', 'echo this is initial setup!']
-
-  ## The minimum number of seconds for which a newly created Pod should be ready without any of its containers crashing, for it to be considered available.
-  minReadySeconds: 0
-
-  ## Pod disruption budget for the Ingress Controller pods.
-  podDisruptionBudget:
-    ## Enables PodDisruptionBudget.
-    enabled: false
-    ## The annotations of the Ingress Controller pod disruption budget.
-    annotations: {}
-    ## The number of Ingress Controller pods that should be available. This is a mutually exclusive setting with "maxUnavailable".
-    # minAvailable: 1
-    ## The number of Ingress Controller pods that can be unavailable. This is a mutually exclusive setting with "minAvailable".
-    # maxUnavailable: 1
-
-    ## Strategy used to replace old Pods by new ones. .spec.strategy.type can be "Recreate" or "RollingUpdate" for Deployments, and "OnDelete" or "RollingUpdate" for Daemonsets. "RollingUpdate" is the default value.
-  strategy: {}
-
-  ## Extra containers for the Ingress Controller pods.
-  extraContainers: []
-  # - name: container
-  #   image: busybox:1.34
-  #   command: ['sh', '-c', 'echo this is a sidecar!']
-
-  ## The number of replicas of the Ingress Controller deployment.
+    location / {
+      return 404;
+    }
+  ## @param defaultBackend.replicaCount Desired number of default backend pods
+  ##
   replicaCount: 1
-
-  ## Configures the ingress class the Ingress Controller uses.
-  ingressClass:
-    ## A class of the Ingress Controller.
-
-    ## IngressClass resource with the name equal to the class must be deployed. Otherwise,
-    ## the Ingress Controller will fail to start.
-    ## The Ingress Controller only processes resources that belong to its class - i.e. have the "ingressClassName" field resource equal to the class.
-
-    ## The Ingress Controller processes all the resources that do not have the "ingressClassName" field for all versions of kubernetes.
-    name: nginx
-
-    ## Creates a new IngressClass object with the name "controller.ingressClass.name". To use an existing IngressClass with the same name, set this value to false. If you use helm upgrade, do not change the values from the previous release as helm will delete IngressClass objects managed by helm. If you are upgrading from a release earlier than 3.3.0, do not set the value to false.
-    create: true
-
-    ## New Ingresses without an ingressClassName field specified will be assigned the class specified in `controller.ingressClass`. Requires "controller.ingressClass.create".
-    setAsDefaultIngress: false
-
-  ## Comma separated list of namespaces to watch for Ingress resources. By default, the Ingress Controller watches all namespaces. Mutually exclusive with "controller.watchNamespaceLabel".
-  watchNamespace: ""
-
-  ## Configures the Ingress Controller to watch only those namespaces with label foo=bar. By default, the Ingress Controller watches all namespaces. Mutually exclusive with "controller.watchNamespace".
-  watchNamespaceLabel: ""
-
-  ## Comma separated list of namespaces to watch for Secret resources. By default, the Ingress Controller watches all namespaces.
-  watchSecretNamespace: ""
-
-  ## Enable the custom resources.
-  enableCustomResources: true
-
-  ## Enable OIDC policies.
-  enableOIDC: false
-
-  ## Include year in log header. This parameter will be removed in release 3.7 and the year will be included by default.
-  includeYear: false
-
-  ## Enable TLS Passthrough on port 443. Requires controller.enableCustomResources.
-  enableTLSPassthrough: false
-
-  ## Set the port for TLS Passthrough. Requires controller.enableCustomResources and controller.enableTLSPassthrough.
-  tlsPassthroughPort: 443
-
-  ## Enable cert manager for Virtual Server resources. Requires controller.enableCustomResources.
-  enableCertManager: false
-
-  ## Enable external DNS for Virtual Server resources. Requires controller.enableCustomResources.
-  enableExternalDNS: false
-
-  globalConfiguration:
-    ## Creates the GlobalConfiguration custom resource. Requires controller.enableCustomResources.
-    create: false
-
-    ## The spec of the GlobalConfiguration for defining the global configuration parameters of the Ingress Controller.
-    spec: {} ## Ensure both curly brackets are removed when adding listeners in YAML format.
-    # listeners:
-    # - name: dns-udp
-    #   port: 5353
-    #   protocol: UDP
-    # - name: dns-tcp
-    #   port: 5353
-    #   protocol: TCP
-
-  ## Enable custom NGINX configuration snippets in Ingress, VirtualServer, VirtualServerRoute and TransportServer resources.
-  enableSnippets: false
-
-  ## Add a location based on the value of health-status-uri to the default server. The location responds with the 200 status code for any request.
-  ## Useful for external health-checking of the Ingress Controller.
-  healthStatus: false
-
-  ## Sets the URI of health status location in the default server. Requires controller.healthStatus.
-  healthStatusURI: "/nginx-health"
-
-  nginxStatus:
-    ## Enable the NGINX stub_status, or the NGINX Plus API.
-    enable: true
-
-    ## Set the port where the NGINX stub_status or the NGINX Plus API is exposed.
-    port: 8080
-
-    ## Add IPv4 IP/CIDR blocks to the allow list for NGINX stub_status or the NGINX Plus API. Separate multiple IP/CIDR by commas.
-    allowCidrs: "127.0.0.1"
-
-  service:
-    ## Creates a service to expose the Ingress Controller pods.
-    create: true
-
-    ## The type of service to create for the Ingress Controller.
-    type: LoadBalancer
-
-    ## The externalTrafficPolicy of the service. The value Local preserves the client source IP.
-    externalTrafficPolicy: Local
-
-    ## The annotations of the Ingress Controller service.
-    annotations: {}
-
-    ## The extra labels of the service.
-    extraLabels: {}
-
-    ## The static IP address for the load balancer. Requires controller.service.type set to LoadBalancer. The cloud provider must support this feature.
-    loadBalancerIP: ""
-
-    ## The ClusterIP for the Ingress Controller service, autoassigned if not specified.
-    clusterIP: ""
-
-    ## The list of external IPs for the Ingress Controller service.
-    externalIPs: []
-
-    ## The IP ranges (CIDR) that are allowed to access the load balancer. Requires controller.service.type set to LoadBalancer. The cloud provider must support this feature.
-    loadBalancerSourceRanges: []
-
-    ## Whether to automatically allocate NodePorts (only for LoadBalancers).
-    # allocateLoadBalancerNodePorts: false
-
-    ## Dual stack preference.
-    ## Valid values: SingleStack, PreferDualStack, RequireDualStack
-    # ipFamilyPolicy: SingleStack
-
-    ## List of IP families assigned to this service.
-    ## Valid values: IPv4, IPv6
-    # ipFamilies:
-    #   - IPv6
-
-    httpPort:
-      ## Enables the HTTP port for the Ingress Controller service.
-      enable: true
-
-      ## The HTTP port of the Ingress Controller service.
-      port: 80
-
-      ## The custom NodePort for the HTTP port. Requires controller.service.type set to NodePort.
-      # nodePort: 80
-
-      ## The HTTP port on the POD where the Ingress Controller service is running.
-      targetPort: 80
-
-    httpsPort:
-      ## Enables the HTTPS port for the Ingress Controller service.
-      enable: true
-
-      ## The HTTPS port of the Ingress Controller service.
-      port: 443
-
-      ## The custom NodePort for the HTTPS port. Requires controller.service.type set to NodePort.
-      # nodePort: 443
-
-      ## The HTTPS port on the POD where the Ingress Controller service is running.
-      targetPort: 443
-
-    ## A list of custom ports to expose through the Ingress Controller service. Follows the conventional Kubernetes yaml syntax for service ports.
-    customPorts: []
-
-  serviceAccount:
-    ## The annotations of the service account of the Ingress Controller pods.
-    annotations: {}
-
-    ## The name of the service account of the Ingress Controller pods. Used for RBAC.
-    ## Autogenerated if not set or set to "".
-    # name: nginx-ingress
-
-    ## The name of the secret containing docker registry credentials.
-    ## Secret must exist in the same namespace as the helm release.
-    imagePullSecretName: ""
-
-    ## A list of secret names containing docker registry credentials.
-    ## Secrets must exist in the same namespace as the helm release.
-    imagePullSecretsNames: []
-
-  reportIngressStatus:
-    ## Updates the address field in the status of Ingress resources with an external address of the Ingress Controller.
-    ## You must also specify the source of the external address either through an external service via controller.reportIngressStatus.externalService,
-    ## controller.reportIngressStatus.ingressLink or the external-status-address entry in the ConfigMap via controller.config.entries.
-    ## Note: controller.config.entries.external-status-address takes precedence over the others.
-    enable: true
-
-    ## Specifies the name of the service with the type LoadBalancer through which the Ingress Controller is exposed externally.
-    ## The external address of the service is used when reporting the status of Ingress, VirtualServer and VirtualServerRoute resources.
-    ## controller.reportIngressStatus.enable must be set to true.
-    ## The default is autogenerated and matches the created service (see controller.service.create).
-    # externalService: nginx-ingress
-
-    ## Specifies the name of the IngressLink resource, which exposes the Ingress Controller pods via a BIG-IP system.
-    ## The IP of the BIG-IP system is used when reporting the status of Ingress, VirtualServer and VirtualServerRoute resources.
-    ## controller.reportIngressStatus.enable must be set to true.
-    ingressLink: ""
-
-    ## Enable Leader election to avoid multiple replicas of the controller reporting the status of Ingress resources. controller.reportIngressStatus.enable must be set to true.
-    enableLeaderElection: true
-
-    ## Specifies the name to be used as the lock for leader election. controller.reportIngressStatus.enableLeaderElection must be set to true.
-    leaderElectionLockName: "nginx-ingress-leader"
-
-    ## The annotations of the leader election configmap.
-    annotations: {}
-
-  pod:
-    ## The annotations of the Ingress Controller pod.
-    annotations: {}
-
-    ## The additional extra labels of the Ingress Controller pod.
-    extraLabels: {}
-
-  ## The PriorityClass of the Ingress Controller pods.
-  # priorityClassName: ""
-
-  readyStatus:
-    ## Enables readiness endpoint "/nginx-ready". The endpoint returns a success code when NGINX has loaded all the config after startup.
-    enable: true
-
-    ## Set the port where the readiness endpoint is exposed.
-    port: 8081
-
-    ## The number of seconds after the Ingress Controller pod has started before readiness probes are initiated.
+  ## Default backend pods' Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+  ## @param defaultBackend.podSecurityContext.enabled Enable Default backend pods' Security Context
+  ## @param defaultBackend.podSecurityContext.fsGroupChangePolicy Set filesystem group change policy
+  ## @param defaultBackend.podSecurityContext.sysctls Set kernel settings using the sysctl interface
+  ## @param defaultBackend.podSecurityContext.supplementalGroups Set filesystem extra groups
+  ## @param defaultBackend.podSecurityContext.fsGroup Group ID for the container filesystem
+  ##
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    sysctls: []
+    supplementalGroups: []
+    fsGroup: 1001
+  ## Default backend containers' Security Context (only main container)
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  ## @param defaultBackend.containerSecurityContext.enabled Enable Default backend containers' Security Context
+  ## @param defaultBackend.containerSecurityContext.capabilities.drop [array] Linux Kernel capabilities that should be dropped
+  ## @param defaultBackend.containerSecurityContext.allowPrivilegeEscalation Switch to allow priviledge escalation on the container
+  ## @param defaultBackend.containerSecurityContext.seLinuxOptions [object,nullable] Set SELinux options in container
+  ## @param defaultBackend.containerSecurityContext.runAsUser User ID for the Default backend container
+  ## @param defaultBackend.containerSecurityContext.runAsGroup Group ID for the Default backend container
+  ## @param defaultBackend.containerSecurityContext.readOnlyRootFilesystem Set container's Security Context readOnlyRootFilesystem
+  ## @param defaultBackend.containerSecurityContext.runAsNonRoot Set container's Security Context runAsNonRoot
+  ## @param defaultBackend.containerSecurityContext.seccompProfile.type Set container's Security Context seccomp profile
+  ##
+  containerSecurityContext:
+    enabled: true
+    allowPrivilegeEscalation: false
+    seLinuxOptions: null
+    runAsUser: 1001
+    runAsGroup: 1001
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: ["ALL"]
+    runAsNonRoot: true
+    seccompProfile:
+      type: "RuntimeDefault"
+  ## Default backend containers' resource requests and limits
+  ## ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+  ## We usually recommend not to specify default resources and to leave this as a conscious
+  ## choice for the user. This also increases chances charts run on environments with little
+  ## resources, such as Minikube. If you do want to specify resources, uncomment the following
+  ## lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  ## @param defaultBackend.resourcesPreset Set container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if defaultBackend.resources is set (defaultBackend.resources is recommended for production).
+  ## More information: https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15
+  ##
+  resourcesPreset: "nano"
+  ## @param defaultBackend.resources Set container requests and limits for different resources like CPU or memory (essential for production workloads)
+  ## Example:
+  ## resources:
+  ##   requests:
+  ##     cpu: 2
+  ##     memory: 512Mi
+  ##   limits:
+  ##     cpu: 3
+  ##     memory: 1024Mi
+  ##
+  resources: {}
+  ## Default backend containers' liveness probe. Evaluated as a template.
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ## @param defaultBackend.livenessProbe.enabled Enable livenessProbe
+  ## @param defaultBackend.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+  ## @param defaultBackend.livenessProbe.periodSeconds Period seconds for livenessProbe
+  ## @param defaultBackend.livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+  ## @param defaultBackend.livenessProbe.failureThreshold Failure threshold for livenessProbe
+  ## @param defaultBackend.livenessProbe.successThreshold Success threshold for livenessProbe
+  ##
+  livenessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  ## Default backend containers' readiness probe. Evaluated as a template.
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ## @param defaultBackend.readinessProbe.enabled Enable readinessProbe
+  ## @param defaultBackend.readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+  ## @param defaultBackend.readinessProbe.periodSeconds Period seconds for readinessProbe
+  ## @param defaultBackend.readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+  ## @param defaultBackend.readinessProbe.failureThreshold Failure threshold for readinessProbe
+  ## @param defaultBackend.readinessProbe.successThreshold Success threshold for readinessProbe
+  ##
+  readinessProbe:
+    enabled: true
+    failureThreshold: 6
     initialDelaySeconds: 0
-
-  ## Enable collection of latency metrics for upstreams. Requires prometheus.create.
-  enableLatencyMetrics: false
-
-  ## Disable IPV6 listeners explicitly for nodes that do not support the IPV6 stack.
-  disableIPV6: false
-
-  ## Sets the port for the HTTP `default_server` listener.
-  defaultHTTPListenerPort: 80
-
-  ## Sets the port for the HTTPS `default_server` listener.
-  defaultHTTPSListenerPort: 443
-
-  ## Configure root filesystem as read-only and add volumes for temporary data.
-  ## Three major releases after 3.5.x this argument will be moved to the `securityContext` section.
-  ## This value will not be used if `controller.securityContext` is set
-  readOnlyRootFilesystem: false
-
-  ## Enable dynamic reloading of certificates
-  enableSSLDynamicReload: true
-
-  ## Configure telemetry reporting options
-  telemetryReporting:
-    ## Enable telemetry reporting
-    enable: true
-
-  ## Allows weight adjustments without reloading the NGINX Configuration for two-way splits in NGINX Plus.
-  ## May require increasing map_hash_bucket_size, map_hash_max_size,
-  ## variable_hash_bucket_size, and variable_hash_max_size in the ConfigMap based on the number of two-way splits.
-  enableWeightChangesDynamicReload: false
-
-rbac:
-  ## Configures RBAC.
-  create: true
-
-  clusterrole:
-    ## Create ClusterRole
-    create: true
-
-prometheus:
-  ## Expose NGINX or NGINX Plus metrics in the Prometheus format.
-  create: true
-
-  ## Configures the port to scrape the metrics.
-  port: 9113
-
-  ## Specifies the namespace/name of a Kubernetes TLS Secret which will be used to protect the Prometheus endpoint.
-  secret: ""
-
-  ## Configures the HTTP scheme used.
-  scheme: http
-
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+  ## Default backend containers' startup probe. Evaluated as a template.
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ## @param defaultBackend.startupProbe.enabled Enable startupProbe
+  ## @param defaultBackend.startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+  ## @param defaultBackend.startupProbe.periodSeconds Period seconds for startupProbe
+  ## @param defaultBackend.startupProbe.timeoutSeconds Timeout seconds for startupProbe
+  ## @param defaultBackend.startupProbe.failureThreshold Failure threshold for startupProbe
+  ## @param defaultBackend.startupProbe.successThreshold Success threshold for startupProbe
+  ##
+  startupProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+  ## @param defaultBackend.customStartupProbe Custom liveness probe for the Web component
+  ##
+  customStartupProbe: {}
+  ## @param defaultBackend.customLivenessProbe Custom liveness probe for the Web component
+  ##
+  customLivenessProbe: {}
+  ## @param defaultBackend.customReadinessProbe Custom readiness probe for the Web component
+  ##
+  customReadinessProbe: {}
+  ## @param defaultBackend.podLabels Extra labels for Controller pods
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+  ##
+  podLabels: {}
+  ## @param defaultBackend.podAnnotations Annotations for Controller pods
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  podAnnotations: {}
+  ## @param defaultBackend.priorityClassName priorityClassName
+  ## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+  ##
+  priorityClassName: ""
+  ## @param defaultBackend.schedulerName Name of the k8s scheduler (other than default)
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  schedulerName: ""
+  ## @param defaultBackend.terminationGracePeriodSeconds In seconds, time the given to the pod to terminate gracefully
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods
+  ##
+  terminationGracePeriodSeconds: 60
+  ## @param defaultBackend.topologySpreadConstraints Topology Spread Constraints for pod assignment
+  ## https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+  ## The value is evaluated as a template
+  ##
+  topologySpreadConstraints: []
+  ## @param defaultBackend.podAffinityPreset Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAffinityPreset: ""
+  ## @param defaultBackend.podAntiAffinityPreset Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAntiAffinityPreset: soft
+  ## Node affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+  ##
+  nodeAffinityPreset:
+    ## @param defaultBackend.nodeAffinityPreset.type Node affinity preset type. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+    ##
+    type: ""
+    ## @param defaultBackend.nodeAffinityPreset.key Node label key to match. Ignored if `affinity` is set.
+    ## E.g.
+    ## key: "kubernetes.io/e2e-az-name"
+    ##
+    key: ""
+    ## @param defaultBackend.nodeAffinityPreset.values Node label values to match. Ignored if `affinity` is set.
+    ## E.g.
+    ## values:
+    ##   - e2e-az1
+    ##   - e2e-az2
+    ##
+    values: []
+  ## @param defaultBackend.command Override default container command (useful when using custom images)
+  ##
+  command: []
+  ## @param defaultBackend.args Override default container args (useful when using custom images)
+  ##
+  args: []
+  ## @param defaultBackend.lifecycleHooks for the %%MAIN_CONTAINER_NAME%% container(s) to automate configuration before or after startup
+  ##
+  lifecycleHooks: {}
+  ## @param defaultBackend.extraEnvVars Array with extra environment variables to add to %%MAIN_CONTAINER_NAME%% nodes
+  ## e.g:
+  ## extraEnvVars:
+  ##   - name: FOO
+  ##     value: "bar"
+  ##
+  extraEnvVars: []
+  ## @param defaultBackend.extraEnvVarsCM Name of existing ConfigMap containing extra env vars for %%MAIN_CONTAINER_NAME%% nodes
+  ##
+  extraEnvVarsCM: ""
+  ## @param defaultBackend.extraEnvVarsSecret Name of existing Secret containing extra env vars for %%MAIN_CONTAINER_NAME%% nodes
+  ##
+  extraEnvVarsSecret: ""
+  ## @param defaultBackend.extraVolumes Optionally specify extra list of additional volumes for the %%MAIN_CONTAINER_NAME%% pod(s)
+  ##
+  extraVolumes: []
+  ## @param defaultBackend.extraVolumeMounts Optionally specify extra list of additional volumeMounts for the %%MAIN_CONTAINER_NAME%% container(s)
+  ##
+  extraVolumeMounts: []
+  ## @param defaultBackend.sidecars Add additional sidecar containers to the %%MAIN_CONTAINER_NAME%% pod(s)
+  ## e.g:
+  ## sidecars:
+  ##   - name: your-image-name
+  ##     image: your-image
+  ##     imagePullPolicy: Always
+  ##     ports:
+  ##       - name: portname
+  ##         containerPort: 1234
+  ##
+  sidecars: []
+  ## @param defaultBackend.initContainers Add additional init containers to the %%MAIN_CONTAINER_NAME%% pod(s)
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+  ## e.g:
+  ## initContainers:
+  ##  - name: your-image-name
+  ##    image: your-image
+  ##    imagePullPolicy: Always
+  ##    command: ['sh', '-c', 'echo "hello world"']
+  ##
+  initContainers: []
+  ## @param defaultBackend.affinity Affinity for pod assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  ## Note: defaultBackend.podAffinityPreset, defaultBackend.podAntiAffinityPreset, and defaultBackend.nodeAffinityPreset will be ignored when it's set
+  ##
+  affinity: {}
+  ## @param defaultBackend.nodeSelector Node labels for pod assignment
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+  ##
+  nodeSelector: {}
+  ## @param defaultBackend.tolerations Tolerations for pod assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations: []
+  ## Default backend Service parameters
+  ##
   service:
-    ## Creates a ClusterIP Service to expose Prometheus metrics internally
-    ## Requires prometheus.create=true
-    create: false
+    ## @param defaultBackend.service.type Kubernetes Service type for default backend
+    ##
+    type: ClusterIP
+    ## @param defaultBackend.service.ports.http Default backend service HTTP port
+    ##
+    ports:
+      http: 80
+    ## @param defaultBackend.service.annotations Annotations for the default backend service
+    ##
+    annotations: {}
+  ## Network Policies
+  ## Ref: https://kubernetes.io/docs/concepts/services-networking/network-policies/
+  ##
+  networkPolicy:
+    ## @param defaultBackend.networkPolicy.enabled Specifies whether a NetworkPolicy should be created
+    ##
+    enabled: true
+    ## @param defaultBackend.networkPolicy.allowExternal Don't require server label for connections
+    ## The Policy model to apply. When set to false, only pods with the correct
+    ## server label will have network access to the ports server is listening
+    ## on. When true, server will accept connections from any source
+    ## (with the correct destination port).
+    ##
+    allowExternal: true
+    ## @param defaultBackend.networkPolicy.allowExternalEgress Allow the pod to access any range of port and all destinations.
+    ##
+    allowExternalEgress: true
+    ## @param defaultBackend.networkPolicy.extraIngress [array] Add extra ingress rules to the NetworkPolicy
+    ## e.g:
+    ## extraIngress:
+    ##   - ports:
+    ##       - port: 1234
+    ##     from:
+    ##       - podSelector:
+    ##           - matchLabels:
+    ##               - role: frontend
+    ##       - podSelector:
+    ##           - matchExpressions:
+    ##               - key: role
+    ##                 operator: In
+    ##                 values:
+    ##                   - frontend
+    extraIngress: []
+    ## @param defaultBackend.networkPolicy.extraEgress [array] Add extra ingress rules to the NetworkPolicy
+    ## e.g:
+    ## extraEgress:
+    ##   - ports:
+    ##       - port: 1234
+    ##     to:
+    ##       - podSelector:
+    ##           - matchLabels:
+    ##               - role: frontend
+    ##       - podSelector:
+    ##           - matchExpressions:
+    ##               - key: role
+    ##                 operator: In
+    ##                 values:
+    ##                   - frontend
+    ##
+    extraEgress: []
+    ## @param defaultBackend.networkPolicy.ingressNSMatchLabels [object] Labels to match to allow traffic from other namespaces
+    ## @param defaultBackend.networkPolicy.ingressNSPodMatchLabels [object] Pod labels to match to allow traffic from other namespaces
+    ##
+    ingressNSMatchLabels: {}
+    ingressNSPodMatchLabels: {}
+  ## Default backend Pod Disruption Budget configuration
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  ##
+  pdb:
+    ## @param defaultBackend.pdb.create Enable/disable a Pod Disruption Budget creation for Default backend
+    ##
+    create: true
+    ## @param defaultBackend.pdb.minAvailable Minimum number/percentage of Default backend pods that should remain scheduled
+    ##
+    minAvailable: ""
+    ## @param defaultBackend.pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable. Defaults to `1` if both `defaultBackend.pdb.minAvailable` and `defaultBackend.pdb.maxUnavailable` are empty.
+    ##
+    maxUnavailable: ""
+## @section Traffic exposure parameters
 
-    labels:
-      service: "nginx-ingress-prometheus-service"
+## Service parameters
+##
+service:
+  ## @param service.type Kubernetes Service type for Controller
+  ##
+  type: LoadBalancer
+  ## @param service.ports [object] Service ports
+  ##
+  ports:
+    http: 80
+    https: 443
+  ## @param service.targetPorts [object] Map the controller service HTTP/HTTPS port
+  ##
+  targetPorts:
+    http: http
+    https: https
+  ## @param service.nodePorts [object] Specify the nodePort value(s) for the LoadBalancer and NodePort service types.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+  ##
+  nodePorts:
+    http: ""
+    https: ""
+    tcp: {}
+    udp: {}
+  ## @param service.annotations Annotations for controller service
+  ## This can be used to set the LoadBalancer service type to internal only.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+  ##
+  annotations: {}
+  ## @param service.labels Labels for controller service
+  ##
+  labels: {}
+  ## @param service.clusterIP Controller Internal Cluster Service IP (optional)
+  ##
+  clusterIP: ""
+  ## @param service.externalIPs Controller Service external IP addresses
+  ## Ref: https://kubernetes.io/docs/concepts/services-networking/service/#external-ips
+  ##
+  externalIPs: []
+  ## @param service.ipFamilyPolicy Controller Service ipFamilyPolicy (optional, cloud specific)
+  ## This can be either SingleStack, PreferDualStack or RequireDualStack
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services
+  ##
+  ipFamilyPolicy: ""
+  ## @param service.ipFamilies Controller Service ipFamilies (optional, cloud specific)
+  ## This can be either ["IPv4"], ["IPv6"], ["IPv4", "IPv6"] or ["IPv6", "IPv4"]
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services
+  ##
+  ipFamilies: []
+  ## @param service.loadBalancerIP Kubernetes LoadBalancerIP to request for Controller (optional, cloud specific)
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
+  ##
+  loadBalancerIP: ""
+  ## @param service.loadBalancerSourceRanges List of IP CIDRs allowed access to load balancer (if supported)
+  ## https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+  ##
+  loadBalancerSourceRanges: []
+  ## @param service.extraPorts Extra ports to expose (normally used with the `sidecar` value)
+  ##
+  extraPorts: []
+  ## @param service.externalTrafficPolicy Set external traffic policy to: "Local" to preserve source IP on providers supporting it
+  ## Enable client source IP preservation
+  ## Ref: https://kubernetes.io/docs/tutorials/services/source-ip/#source-ip-for-services-with-typeloadbalancer
+  ##
+  externalTrafficPolicy: ""
+  ## @param service.healthCheckNodePort Set this to the managed health-check port the kube-proxy will expose. If blank, a random port in the `NodePort` range will be assigned
+  ##
+  healthCheckNodePort: 0
+  ## @param service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+  ## If "ClientIP", consecutive client requests will be directed to the same Pod
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+  ##
+  sessionAffinity: None
+  ## @param service.sessionAffinityConfig Additional settings for the sessionAffinity
+  ## sessionAffinityConfig:
+  ##   clientIP:
+  ##     timeoutSeconds: 300
+  ##
+  sessionAffinityConfig: {}
+## Network Policies
+## Ref: https://kubernetes.io/docs/concepts/services-networking/network-policies/
+##
+networkPolicy:
+  ## @param networkPolicy.enabled Specifies whether a NetworkPolicy should be created
+  ##
+  enabled: true
+  ## @param networkPolicy.allowExternal Don't require server label for connections
+  ## The Policy model to apply. When set to false, only pods with the correct
+  ## server label will have network access to the ports server is listening
+  ## on. When true, server will accept connections from any source
+  ## (with the correct destination port).
+  ##
+  allowExternal: true
+  ## @param networkPolicy.allowExternalEgress Allow the pod to access any range of port and all destinations.
+  ##
+  allowExternalEgress: true
+  ## @param networkPolicy.kubeAPIServerPorts [array] List of possible endpoints to kube-apiserver (limit to your cluster settings to increase security)
+  ##
+  kubeAPIServerPorts: [443, 6443, 8443]
+  ## @param networkPolicy.extraIngress [array] Add extra ingress rules to the NetworkPolicy
+  ## e.g:
+  ## extraIngress:
+  ##   - ports:
+  ##       - port: 1234
+  ##     from:
+  ##       - podSelector:
+  ##           - matchLabels:
+  ##               - role: frontend
+  ##       - podSelector:
+  ##           - matchExpressions:
+  ##               - key: role
+  ##                 operator: In
+  ##                 values:
+  ##                   - frontend
+  extraIngress: []
+  ## @param networkPolicy.extraEgress [array] Add extra ingress rules to the NetworkPolicy
+  ## e.g:
+  ## extraEgress:
+  ##   - ports:
+  ##       - port: 1234
+  ##     to:
+  ##       - podSelector:
+  ##           - matchLabels:
+  ##               - role: frontend
+  ##       - podSelector:
+  ##           - matchExpressions:
+  ##               - key: role
+  ##                 operator: In
+  ##                 values:
+  ##                   - frontend
+  ##
+  extraEgress: []
+  ## @param networkPolicy.ingressNSMatchLabels [object] Labels to match to allow traffic from other namespaces
+  ## @param networkPolicy.ingressNSPodMatchLabels [object] Pod labels to match to allow traffic from other namespaces
+  ##
+  ingressNSMatchLabels: {}
+  ingressNSPodMatchLabels: {}
+## @section RBAC parameters
 
-  serviceMonitor:
-    ## Creates a serviceMonitor to expose statistics on the kubernetes pods.
-    create: false
+## Pods Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+##
+serviceAccount:
+  ## @param serviceAccount.create Enable the creation of a ServiceAccount for Controller pods
+  ##
+  create: true
+  ## @param serviceAccount.name Name of the created ServiceAccount
+  ## If not set and create is true, a name is generated using the metrics-server.fullname template
+  name: ""
+  ## @param serviceAccount.annotations Annotations for service account.
+  ## Only used if `create` is `true`.
+  ##
+  annotations: {}
+  ## @param serviceAccount.automountServiceAccountToken Automount service account token for the server service account
+  ##
+  automountServiceAccountToken: false
+## Role Based Access
+## Ref: https://kubernetes.io/docs/admin/authorization/rbac/
+##
+rbac:
+  ## @param rbac.create Specifies whether RBAC rules should be created
+  ##
+  create: true
+  ## @param rbac.rules Custom RBAC rules
+  ## Example:
+  ## rules:
+  ##   - apiGroups:
+  ##       - ""
+  ##     resources:
+  ##       - pods
+  ##     verbs:
+  ##       - get
+  ##       - list
+  ##
+  rules: []
+## @section Other parameters
 
-    ## Kubernetes object labels to attach to the serviceMonitor object.
+## Controller Pod Disruption Budget configuration
+## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+##
+pdb:
+  ## @param pdb.create Enable/disable a Pod Disruption Budget creation for Controller
+  ##
+  create: true
+  ## @param pdb.minAvailable Minimum number/percentage of Controller pods that should remain scheduled
+  ##
+  minAvailable: ""
+  ## @param pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable. Defaults to `1` if both `pdb.minAvailable` and `pdb.maxUnavailable` are empty.
+  ##
+  maxUnavailable: ""
+## Controller Autoscaling configuration
+## @param autoscaling.enabled Enable autoscaling for Controller
+## @param autoscaling.minReplicas Minimum number of Controller replicas
+## @param autoscaling.maxReplicas Maximum number of Controller replicas
+## @param autoscaling.targetCPU Target CPU utilization percentage
+## @param autoscaling.targetMemory Target Memory utilization percentage
+##
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 11
+  targetCPU: ""
+  targetMemory: ""
+## @section Metrics parameters
+
+## Prometheus exporter parameters
+##
+metrics:
+  ## @param metrics.enabled Enable exposing Controller statistics
+  ##
+  enabled: false
+  ## Prometheus exporter service parameters
+  ##
+  service:
+    ## @param metrics.service.type Type of Prometheus metrics service to create
+    ##
+    type: ClusterIP
+    ## @param metrics.service.ports.metrics Service HTTP management port
+    ##
+    ports:
+      metrics: 9913
+    ## @param metrics.service.annotations [object] Annotations for the Prometheus exporter service
+    ##
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "{{ coalesce .Values.metrics.service.ports.metrics .Values.metrics.service.port }}"
+    ## @param metrics.service.labels Labels for the Prometheus exporter service
+    ##
     labels: {}
-
-    ## A set of labels to allow the selection of endpoints for the ServiceMonitor.
-    selectorMatchLabels:
-      service: "nginx-ingress-prometheus-service"
-
-    ## A list of endpoints allowed as part of this ServiceMonitor.
-    ## Matches on the name of a Service port.
-    endpoints:
-      - port: prometheus
-
-serviceInsight:
-  ## Expose NGINX Plus Service Insight endpoint.
-  create: false
-
-  ## Configures the port to expose endpoint.
-  port: 9114
-
-  ## Specifies the namespace/name of a Kubernetes TLS Secret which will be used to protect the Service Insight endpoint.
-  secret: ""
-
-  ## Configures the HTTP scheme used.
-  scheme: http
-
-nginxServiceMesh:
-  ## Enables integration with NGINX Service Mesh.
-  enable: false
-
-  ## Enables NGINX Service Mesh workload to route egress traffic through the Ingress Controller.
-  ## Requires nginxServiceMesh.enable
-  enableEgress: false
-
-nginxAgent:
-  ## Enables NGINX Agent.
-  enable: false
-  ## If nginxAgent.instanceGroup is not set the value of nginx-ingress.controller.fullname will be used
-  instanceGroup: ""
-  logLevel: "error"
-  ## Syslog listener which NGINX Agent uses to accept messages from App Protect WAF
-  syslog:
-    host: "127.0.0.1"
-    port: 1514
-  napMonitoring:
-    collectorBufferSize: 50000
-    processorBufferSize: 50000
-  instanceManager:
-    # FQDN or IP for connecting to NGINX Instance Manager, e.g. nim.example.com
-    host: ""
-    grpcPort: 443
-    sni: ""
-    tls:
-      enabled: true
-      skipVerify: false
-      ## kubernetes.io/tls secret with a TLS certificate and key for using mTLS between NGINX Agent and Instance Manager
-      secret: ""
-      ## nginx.org/ca secret for verification of Instance Manager TLS
-      caSecret: ""
-  ## The name of a custom ConfigMap to use instead of the one provided by default
-  customConfigMap: ""
+  ## Prometheus Operator ServiceMonitor configuration
+  ##
+  serviceMonitor:
+    ## @param metrics.serviceMonitor.enabled Create ServiceMonitor resource for scraping metrics using PrometheusOperator
+    ##
+    enabled: false
+    ## @param metrics.serviceMonitor.namespace Namespace in which Prometheus is running
+    ##
+    namespace: ""
+    ## @param metrics.serviceMonitor.jobLabel The name of the label on the target service to use as the job name in prometheus.
+    ##
+    jobLabel: ""
+    ## @param metrics.serviceMonitor.interval Interval at which metrics should be scraped
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+    ##
+    interval: 30s
+    ## @param metrics.serviceMonitor.scrapeTimeout Specify the timeout after which the scrape is ended
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+    ## e.g:
+    ## scrapeTimeout: 10s
+    ##
+    scrapeTimeout: ""
+    ## @param metrics.serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ##
+    relabelings: []
+    ## @param metrics.serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ##
+    metricRelabelings: []
+    ## @param metrics.serviceMonitor.selector ServiceMonitor selector labels
+    ## ref: https://github.com/bitnami/charts/tree/main/bitnami/prometheus-operator#prometheus-configuration
+    ## e.g:
+    ## selector:
+    ##   prometheus: my-prometheus
+    ##
+    selector: {}
+    ## @param metrics.serviceMonitor.annotations Extra annotations for the ServiceMonitor
+    ##
+    annotations: {}
+    ## @param metrics.serviceMonitor.labels Extra labels for the ServiceMonitor
+    ##
+    labels: {}
+    ## @param metrics.serviceMonitor.honorLabels honorLabels chooses the metric's labels on collisions with target labels
+    ##
+    honorLabels: false
+  ## @param metrics.prometheusRule.enabled Create PrometheusRules resource for scraping metrics using PrometheusOperator
+  ## @param metrics.prometheusRule.additionalLabels Used to pass Labels that are required by the Installed Prometheus Operator
+  ## @param metrics.prometheusRule.namespace Namespace which Prometheus is running in
+  ## @param metrics.prometheusRule.rules Rules to be prometheus in YAML format, check values for an example
+  ##
+  prometheusRule:
+    enabled: false
+    additionalLabels: {}
+    namespace: ""
+    rules: []

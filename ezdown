@@ -55,7 +55,7 @@ localpathProvisionerVer=v0.0.24
 nfsProvisionerVer=v4.0.2
 #https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
 promChartVer=45.23.0
-nginxIngressChartVer=v2.3.2
+nginxIngressChartVer=11.3.20
 #https://github.com/bitnami/charts/tree/main/bitnami/kubeapps
 kubeappsVer=12.4.3
 

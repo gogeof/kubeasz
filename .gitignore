@@ -15,3 +15,5 @@ manifests/storage/*
 
 # cluster instances
 clusters/
+
+.idea

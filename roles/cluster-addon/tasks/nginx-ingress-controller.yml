@@ -49,6 +49,6 @@
     - name: helm 创建 nginx-ingress-stack {{ nginx_ingress_chart_ver }}
       shell: "{{ base_dir }}/bin/helm upgrade ingress --install \
               -n {{ nginx_ingress_namespace }} -f {{ cluster_dir }}/yml/nginx-ingress-values.yaml \
-              {{ base_dir }}/roles/cluster-addon/files/nginx-ingress-{{ nginx_ingress_chart_ver }}.tgz"
+              {{ base_dir }}/roles/cluster-addon/files/nginx-ingress-controller-{{ nginx_ingress_chart_ver }}.tgz"
   when: 'nginx_ingress_install == "yes"'
   tags: force_change_certs

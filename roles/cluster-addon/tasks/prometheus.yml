@@ -39,6 +39,12 @@
 
     - debug: var="K8S_VER"
 
+    - name: 创建 prom pv 存储卷配置
+      template: src=prometheus/prometheus-pv.yaml dest={{ cluster_dir }}/yml/prometheus-pv.yaml
+
+    - name: 创建 prom pv 存储卷
+      shell: "{{ base_dir }}/bin/kubectl apply -f {{ cluster_dir }}/yml/prometheus-pv.yaml"
+
     - name: 创建 prom chart 个性化设置
       template: src=prometheus/values.yaml.j2 dest={{ cluster_dir }}/yml/prom-values.yaml
 

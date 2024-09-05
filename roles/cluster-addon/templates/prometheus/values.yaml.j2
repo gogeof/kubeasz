@@ -1,18 +1,23 @@
 ## Provide a k8s version to auto dashboard import script example: kubeTargetVersionOverride: 1.16.6
 kubeTargetVersionOverride: "{{ K8S_VER }}"
 
+## Provide a name in place of kube-prometheus-stack for `app:` labels
+##
+fullnameOverride: "k8s"
+cleanPrometheusOperatorObjectNames: true
+
 ## Configuration for alertmanager
 alertmanager:
   alertmanagerSpec:
     image:
-      registry: {{ DST_REGISTRY }}
+      registry: {{ DST_REGISTRY_ALL }}
   service:
     nodePort: 30902
     type: NodePort
 
 ## Using default values from https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
 grafana:
-  enabled: true
+  enabled: false
   adminUser: admin
   adminPassword: Admin1234!
   image:
@@ -126,7 +131,7 @@ prometheusOperator:
         tag: v1.5.1
   image:
     registry: {{ DST_REGISTRY }}
-    repository: prometheus/prometheus-operator
+    repository: {{ DST_REGISTRY_PREFIX }}/prometheus/prometheus-operator
   service:
     nodePort: 30899
     nodePortTls: 30900
@@ -145,9 +150,19 @@ prometheus:
 
   prometheusSpec:
     image:
-      registry: {{ DST_REGISTRY }}
-    replicas: 1
+      registry: {{ DST_REGISTRY_ALL }}
+    retention: 30d
+    replicas: 2
     secrets:
     - etcd-client-cert
 
-    storageSpec: {}
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: prometheus-local-storage
+          volumeMode: Filesystem
+          resources:
+            requests:
+              storage: 100Gi
