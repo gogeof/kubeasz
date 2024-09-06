@@ -121,14 +121,26 @@
 
 - block:
   - name: Setting worker role name
-    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} kubernetes.io/role=node --overwrite"
+    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} kubernetes.io/role=node node-role.kubernetes.io/worker='' --overwrite"
+
+  - name: add worker prometheus data directory
+    shell: "mkdir -p /var/lib/containerd/data/prometheus"
+    when: "inventory_hostname in groups['kube_node']"
+
+  - name: add monitor node label
+    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} node-role.kubernetes.io/monitor='' --overwrite"
+    when: "inventory_hostname in groups['monitor_node']"
+
+  - name: add infra node label
+    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} node-role.kubernetes.io/infra='' --overwrite"
+    when: "inventory_hostname in groups['infra_node']"
 
   - name: Setting master role name
-    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} kubernetes.io/role=master --overwrite"
+    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} kubernetes.io/role=master node-role.kubernetes.io/master='' --overwrite"
     when: "inventory_hostname in groups['kube_master']"
 
   - name: Making master nodes SchedulingDisabled
     shell: "{{ base_dir }}/bin/kubectl cordon {{ K8S_NODENAME }} "
-    when: "inventory_hostname not in groups['kube_node']"
+    when: "inventory_hostname in groups['kube_master']"
   ignore_errors: true
   connection: local

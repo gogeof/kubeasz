@@ -11,12 +11,12 @@ spec:
   persistentVolumeReclaimPolicy: Delete
   storageClassName: prometheus-local-storage
   local:
-    path: /var/lib/data/prometheus
+    path: /var/lib/containerd/data/prometheus
   nodeAffinity:
     required:
       nodeSelectorTerms:
         - matchExpressions:
-            - key: paas.cmft.com/roles
+            - key: paas.cmft.com/role
               operator: In
               values:
                 - monitor
@@ -34,12 +34,12 @@ spec:
   persistentVolumeReclaimPolicy: Delete
   storageClassName: prometheus-local-storage
   local:
-    path: /var/lib/data/prometheus
+    path: /var/lib/containerd/data/prometheus
   nodeAffinity:
     required:
       nodeSelectorTerms:
         - matchExpressions:
-            - key: paas.cmft.com/roles
+            - key: paas.cmft.com/role
               operator: In
               values:
                 - monitor

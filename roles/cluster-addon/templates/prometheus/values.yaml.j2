@@ -155,6 +155,16 @@ prometheus:
     replicas: 2
     secrets:
     - etcd-client-cert
+    
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: node-role.kubernetes.io/monitor
+              operator: In
+              values:
+              - ''
 
     storageSpec:
       volumeClaimTemplate:

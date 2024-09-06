@@ -19,6 +19,15 @@
 192.168.1.4 k8s_nodename='worker-01'
 192.168.1.5 k8s_nodename='worker-02'
 
+[monitor_node]
+192.168.1.4
+192.168.1.5
+
+# ingress node
+[infra_node]
+192.168.1.4
+192.168.1.5
+
 # [optional] harbor server, a private docker registry
 # 'NEW_INSTALL': 'true' to install a harbor server; 'false' to integrate with existed one
 [harbor]
