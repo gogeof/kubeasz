@@ -18,6 +18,9 @@
 - import_tasks: prometheus.yml
   when: 'prom_install == "yes"'
 
+- import_tasks: eventrouter.yml
+  when: 'eventrouter_install == "yes"'
+
 - import_tasks: nginx-ingress-controller.yml
   when: 'nginx_ingress_install == "yes"'
 

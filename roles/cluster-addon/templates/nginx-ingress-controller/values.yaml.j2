@@ -1109,7 +1109,7 @@ metrics:
     ##
     annotations:
       prometheus.io/scrape: "true"
-      prometheus.io/port: "{{ coalesce .Values.metrics.service.ports.metrics .Values.metrics.service.port }}"
+      prometheus.io/port: "9913"
     ## @param metrics.service.labels Labels for the Prometheus exporter service
     ##
     labels: {}

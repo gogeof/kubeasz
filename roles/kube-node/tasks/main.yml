@@ -120,27 +120,28 @@
   connection: local
 
 - block:
-  - name: Setting worker role name
-    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} kubernetes.io/role=node node-role.kubernetes.io/worker='' --overwrite"
-
-  - name: add worker prometheus data directory
-    shell: "mkdir -p /var/lib/containerd/data/prometheus"
-    when: "inventory_hostname in groups['kube_node']"
-
-  - name: add monitor node label
-    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} node-role.kubernetes.io/monitor='' --overwrite"
-    when: "inventory_hostname in groups['monitor_node']"
+  - name: Setting master role name
+    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} node-role.kubernetes.io/master='' --overwrite"
+    when: "inventory_hostname in groups['kube_master']"
 
   - name: add infra node label
     shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} node-role.kubernetes.io/infra='' --overwrite"
     when: "inventory_hostname in groups['infra_node']"
 
-  - name: Setting master role name
-    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} kubernetes.io/role=master node-role.kubernetes.io/master='' --overwrite"
-    when: "inventory_hostname in groups['kube_master']"
+  - name: Setting worker role name
+    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} node-role.kubernetes.io/worker='' --overwrite"
+    when: "inventory_hostname in groups['kube_node']"
+
+  - name: add worker prometheus data directory
+    shell: "mkdir -p /var/lib/containerd/data/prometheus"
+    when: "inventory_hostname in groups['monitor_node']"
+
+  - name: add monitor node label
+    shell: "{{ base_dir }}/bin/kubectl label node {{ K8S_NODENAME }} node-role.kubernetes.io/monitor='' --overwrite"
+    when: "inventory_hostname in groups['monitor_node']"
 
   - name: Making master nodes SchedulingDisabled
-    shell: "{{ base_dir }}/bin/kubectl cordon {{ K8S_NODENAME }} "
+    shell: "{{ base_dir }}/bin/kubectl taint node {{ K8S_NODENAME }} kubernetes.io/role=master:NoSchedule --overwrite"
     when: "inventory_hostname in groups['kube_master']"
   ignore_errors: true
   connection: local
