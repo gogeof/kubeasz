@@ -133,7 +133,7 @@
     when: "inventory_hostname in groups['kube_node']"
 
   - name: add worker prometheus data directory
-    shell: "mkdir -p /var/lib/containerd/data/prometheus"
+    shell: "mkdir -p /var/lib/data/prometheus && chmod a+rwx /var/lib/data/prometheus"
     when: "inventory_hostname in groups['monitor_node']"
 
   - name: add monitor node label
