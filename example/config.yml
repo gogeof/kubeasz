@@ -54,7 +54,7 @@ ETCD_WAL_DIR: ""
 # role:runtime [containerd,docker]
 ############################
 # [.]启用拉取加速镜像仓库
-ENABLE_MIRROR_REGISTRY: false
+ENABLE_MIRROR_REGISTRY: true
 
 # [.]添加信任的私有仓库
 INSECURE_REG:
